@@ -1,14 +1,5 @@
 "use client";
-
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
-import { GameContext } from "./Game";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 interface TextBoxProps {
   text: string;
@@ -22,7 +13,6 @@ interface TextBoxProps {
 export default function TextBox({ text = "", onClick }: TextBoxProps) {
   const ref = useRef<HTMLDivElement>(null);
   const ogRef = useRef<HTMLDivElement>();
-  const gameContext = useContext(GameContext);
 
   useLayoutEffect(() => {
     if (ref.current && !ogRef.current) {
@@ -57,7 +47,6 @@ export default function TextBox({ text = "", onClick }: TextBoxProps) {
     >
       <span>{text}</span>
       <br />
-      {gameContext.test}
       <button onClick={onClick}>ok</button>
     </div>
   );

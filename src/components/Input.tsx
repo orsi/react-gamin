@@ -109,7 +109,12 @@ export function GameInputProvider({ children }: PropsWithChildren) {
 }
 
 export function useGameInput(
-  callback: (input: IGameInput | IGameInput[keyof IGameInput]) => void,
+  selector: (input: IGameInput) => IGameInput[keyof IGameInput]
+): IGameInput[keyof IGameInput];
+export function useGameInput(
+  selector?: (input: IGameInput) => IGameInput[keyof IGameInput]
+): IGameInput;
+export function useGameInput(
   selector?: (input: IGameInput) => IGameInput[keyof IGameInput]
 ) {
   const gameInputStore = useContext(GameInputContext);
@@ -123,7 +128,5 @@ export function useGameInput(
       : gameInputStore.get()
   );
 
-  useEffect(() => {
-    callback(state);
-  }, [state]);
+  return state;
 }
