@@ -1,9 +1,6 @@
-import { useState, useEffect, createContext, useCallback } from "react";
-import Character1 from "./Character";
-import Character2 from "./Character2";
-import { GameInputProvider } from "./components/Input";
-import { DefaultMap } from "./DefaultMap";
+import { useState, useEffect, useCallback, PropsWithChildren } from "react";
 import { Entity } from "./ecs";
+import { createGameInput, Inputs } from "./Input";
 
 const SPEED = 5;
 
@@ -68,21 +65,64 @@ export function useMovement(entity: Entity) {
   return move;
 }
 
-export default function Game() {
+interface GameProps {
+  input: ("gamepad" | "keyboard" | "mouse")[];
+}
+export default function Game({
+  input,
+  children,
+}: PropsWithChildren<GameProps>) {
   const [width, setWidth] = useState(640);
   const [height, setHeight] = useState(480);
 
+  function onWindowResize() {
+    const bounds = document.body.getBoundingClientRect();
+    setHeight(bounds.height);
+    setWidth(bounds.width);
+  }
+
+  const gamepads: { [key: number]: Gamepad } = {};
+  function onGamepadConnected(e: GamepadEvent) {
+    console.log(
+      "Gamepad connected at index %d: %s. %d buttons, %d axes.",
+      e.gamepad.index,
+      e.gamepad.id,
+      e.gamepad.buttons.length,
+      e.gamepad.axes.length
+    );
+    gamepads[e.gamepad.index] = e.gamepad;
+  }
+
+  function onGamepadDisconnected(e: GamepadEvent) {
+    console.log(
+      "Gamepad disconnected from index %d: %s",
+      e.gamepad.index,
+      e.gamepad.id
+    );
+    delete gamepads[e.gamepad.index];
+  }
+
   useEffect(() => {
-    function onWindowResize() {
-      const bounds = document.body.getBoundingClientRect();
-      setHeight(bounds.height);
-      setWidth(bounds.width);
-    }
+    window.addEventListener("resize", onWindowResize);
     onWindowResize();
+
+    if (input.includes("gamepad")) {
+      window.addEventListener("gamepadconnected", onGamepadConnected);
+      window.addEventListener("gamepaddisconnected", onGamepadDisconnected);
+    }
     return () => {
       window.removeEventListener("resize", onWindowResize);
+      window.removeEventListener("gamepadconnected", onGamepadConnected);
+      window.removeEventListener("gamepaddisconnected", onGamepadDisconnected);
     };
   }, []);
+
+  const GameInputProvider = createGameInput({
+    UP: Inputs.gamepad.BUTTON_12,
+    RIGHT: Inputs.gamepad.BUTTON_15,
+    DOWN: Inputs.gamepad.BUTTON_13,
+    LEFT: Inputs.gamepad.BUTTON_14,
+  });
 
   return (
     <GameInputProvider>
@@ -93,22 +133,12 @@ export default function Game() {
           width,
         }}
       >
-        <FirstScene />
+        {children}
       </div>
     </GameInputProvider>
   );
 }
 
-function FirstScene() {
-  return (
-    <div
-      style={{
-        position: "relative",
-      }}
-    >
-      <DefaultMap />
-      <Character1 />
-      <Character2 />
-    </div>
-  );
+export function Stage({ children }: PropsWithChildren) {
+  return <>{children}</>;
 }

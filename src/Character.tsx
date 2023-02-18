@@ -1,10 +1,10 @@
 import characterImage from "./assets/character.png";
 import { useState, useEffect } from "react";
-import { useMovement } from "./Game";
+import { useMovement } from "./components/Game";
 import Animation from "./components/Animation";
-import useSpriteSheet from "./components/useSpriteSheet";
+import useSpriteSheet from "./components/Sprite";
 import { useGameInput } from "./components/Input";
-import { useEntity, useBody, usePosition } from "./ecs";
+import { useEntity, useBody, usePosition } from "./components/ecs";
 
 export default function Character1() {
   const characterSpriteSheet = useSpriteSheet({

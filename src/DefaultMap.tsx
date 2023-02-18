@@ -1,8 +1,8 @@
 import { ReactNode } from "react";
 import overworldImage from "./assets/Overworld.png";
-import useSpriteSheet from "./components/useSpriteSheet";
-import { useEntity, useBody, usePosition } from "./ecs";
-import { useMovement } from "./Game";
+import useSpriteSheet from "./components/Sprite";
+import { useEntity, useBody, usePosition } from "./components/ecs";
+import { useMovement } from "./components/Game";
 
 export function DefaultMap() {
   const mapSprites = useSpriteSheet({
