@@ -30,7 +30,6 @@ export default function useSpriteSheet({
 
   const sprites: ReactNode[] = [];
   for (let i = 0; i < tilesPerColumn * tilesPerRow; i++) {
-    const key = `sprite-${i}`;
     const x = Math.floor(i % tilesPerColumn);
     const y = Math.floor(i / tilesPerColumn);
     const objectPositionX = -(x * cellWidth);
@@ -39,7 +38,6 @@ export default function useSpriteSheet({
 
     sprites[i] = (
       <img
-        id={`sprite-${key}`}
         style={{
           objectFit: "none",
           objectPosition,

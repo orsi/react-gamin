@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { Fragment, ReactNode } from "react";
 import overworldImage from "./assets/Overworld.png";
 import useSpriteSheet from "./components/Sprite";
 import { useEntity, useBody, usePosition } from "./components/ecs";
@@ -21,7 +21,7 @@ export function DefaultMap() {
       y: 240,
       z: 0,
     });
-    const move = useMovement(entity);
+    useMovement(entity);
 
     return (
       <div
@@ -29,10 +29,14 @@ export function DefaultMap() {
           display: "flex",
           flexDirection: "column",
           position: "absolute",
+          top: "0",
+          left: "0",
           transform: `translate(${position.x}px, ${position.y}px)`,
         }}
       >
-        {sprites}
+        {sprites.map((sprite, i) => (
+          <Fragment key={i}>{sprite}</Fragment>
+        ))}
       </div>
     );
   }

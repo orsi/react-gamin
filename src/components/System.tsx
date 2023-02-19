@@ -3,7 +3,7 @@ import { Entity } from "./ecs";
 
 const SPEED = 5;
 
-const entities = new Set<Entity>();
+const entities = new Map<string, Entity>();
 export function useMovement(entity: Entity) {
   if (!entity.position) {
     throw Error("Entity has no position.");
@@ -13,7 +13,10 @@ export function useMovement(entity: Entity) {
   }
 
   // save entity to movement system map
-  entities.add(entity);
+  const savedEntity = entities.get(entity.id);
+  if (!savedEntity) {
+    entities.set(entity.id, entity);
+  }
 
   // function used to ask system to move
   const move = useCallback(
@@ -26,7 +29,7 @@ export function useMovement(entity: Entity) {
       if (direction === "left") nextPosition.x = nextPosition.x - 1 * SPEED;
 
       let entityInPosition;
-      for (const e of entities) {
+      for (const [id, e] of entities.entries()) {
         if (e.id === entity.id) {
           continue;
         }

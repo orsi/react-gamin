@@ -1,4 +1,3 @@
-import Character1 from "./Character";
 import Character2 from "./Character2";
 import Character3 from "./Character3";
 import Game, { Stage } from "./components/Game";

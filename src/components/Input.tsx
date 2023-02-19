@@ -17,8 +17,15 @@
 // 15 - Right
 // 16 - Home/8bit
 
-import { useRef, PropsWithChildren, useEffect, useCallback } from "react";
-import { createStore } from "./createStore";
+import {
+  useRef,
+  PropsWithChildren,
+  useEffect,
+  useCallback,
+  createContext,
+  useContext,
+  useSyncExternalStore,
+} from "react";
 
 const INPUT_FRAME_MS = 1000 / 60;
 export type KEYBOARD = "up" | "down" | "left" | "right" | "space";
@@ -30,36 +37,58 @@ interface IGameInputStore {
   KEYBOARD_DOWN: boolean;
   KEYBOARD_LEFT: boolean;
   KEYBOARD_RIGHT: boolean;
+  KEYBOARD_SPACE: boolean;
+  KEYBOARD_ENTER: boolean;
+  KEYBOARD_SHIFT_LEFT: boolean;
   GAMEPAD_BUTTON_12: boolean;
   GAMEPAD_BUTTON_13: boolean;
   GAMEPAD_BUTTON_14: boolean;
   GAMEPAD_BUTTON_15: boolean;
 }
-const GameInputStore = createStore({
+
+const initialState: IGameInputStore = {
   KEYBOARD_UP: false,
   KEYBOARD_DOWN: false,
   KEYBOARD_LEFT: false,
   KEYBOARD_RIGHT: false,
+  KEYBOARD_SPACE: false,
+  KEYBOARD_ENTER: false,
+  KEYBOARD_SHIFT_LEFT: false,
   GAMEPAD_BUTTON_12: false,
   GAMEPAD_BUTTON_13: false,
   GAMEPAD_BUTTON_14: false,
   GAMEPAD_BUTTON_15: false,
-});
+};
 
-export const useGameInput = GameInputStore.useStore;
+function useGameInputStore() {
+  const store = useRef(initialState);
+  const subscribers = useRef(new Set<() => void>());
 
-interface GameInputProps {}
-export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
-  return (
-    <GameInputStore.Provider>
-      <GameInputController>{children}</GameInputController>
-    </GameInputStore.Provider>
-  );
+  const get = useCallback(() => store.current, []);
+  const set = useCallback((value: Partial<IGameInputStore>) => {
+    store.current = Object.assign({}, store.current, value);
+    subscribers.current.forEach((callback) => callback());
+  }, []);
+  const subscribe = useCallback((callback: () => void) => {
+    subscribers.current.add(callback);
+    return () => {
+      subscribers.current.delete(callback);
+    };
+  }, []);
+
+  return {
+    get,
+    set,
+    subscribe,
+  };
 }
 
-function GameInputController({ children }: PropsWithChildren) {
-  const [inputStore, setInputStore] = GameInputStore.useStore();
-
+const GameInputStoreContext = createContext<ReturnType<
+  typeof useGameInputStore
+> | null>(null);
+interface GameInputProps {}
+export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
+  const store = useGameInputStore();
   const gamepadRequestAnimationFrame = useRef(0);
   const lastUpdate = useRef(Date.now());
 
@@ -104,23 +133,53 @@ function GameInputController({ children }: PropsWithChildren) {
     stopPollingGamepadInputs();
   }
 
-  const onKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.code === "ArrowUp") {
-        setInputStore({ KEYBOARD_UP: true });
-      }
-    },
-    [inputStore, setInputStore]
-  );
+  const onKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.code === "ArrowUp" && !store.get().KEYBOARD_UP) {
+      store.set({ KEYBOARD_UP: true });
+    }
+    if (e.code === "ArrowDown" && !store.get().KEYBOARD_DOWN) {
+      store.set({ KEYBOARD_DOWN: true });
+    }
+    if (e.code === "ArrowLeft" && !store.get().KEYBOARD_LEFT) {
+      store.set({ KEYBOARD_LEFT: true });
+    }
+    if (e.code === "ArrowRight" && !store.get().KEYBOARD_RIGHT) {
+      store.set({ KEYBOARD_RIGHT: true });
+    }
+    if (e.code === "Space" && !store.get().KEYBOARD_SPACE) {
+      store.set({ KEYBOARD_SPACE: true });
+    }
+    if (e.code === "ShiftLeft" && !store.get().KEYBOARD_SHIFT_LEFT) {
+      store.set({ KEYBOARD_SHIFT_LEFT: true });
+    }
+    if (e.code === "Enter" && !store.get().KEYBOARD_ENTER) {
+      store.set({ KEYBOARD_ENTER: true });
+    }
+  }, []);
 
-  const onKeyUp = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.code === "ArrowUp") {
-        setInputStore({ KEYBOARD_UP: false });
-      }
-    },
-    [inputStore, setInputStore]
-  );
+  const onKeyUp = useCallback((e: KeyboardEvent) => {
+    if (e.code === "ArrowUp" && store.get().KEYBOARD_UP) {
+      store.set({ KEYBOARD_UP: false });
+    }
+    if (e.code === "ArrowDown" && store.get().KEYBOARD_DOWN) {
+      store.set({ KEYBOARD_DOWN: false });
+    }
+    if (e.code === "ArrowLeft" && store.get().KEYBOARD_LEFT) {
+      store.set({ KEYBOARD_LEFT: false });
+    }
+    if (e.code === "ArrowRight" && store.get().KEYBOARD_RIGHT) {
+      store.set({ KEYBOARD_RIGHT: false });
+    }
+    if (e.code === "Space" && store.get().KEYBOARD_SPACE) {
+      store.set({ KEYBOARD_SPACE: false });
+    }
+    if (e.code === "ShiftLeft" && store.get().KEYBOARD_SHIFT_LEFT) {
+      store.set({ KEYBOARD_SHIFT_LEFT: false });
+    }
+    if (e.code === "Enter" && store.get().KEYBOARD_ENTER) {
+      store.set({ KEYBOARD_ENTER: false });
+    }
+  }, []);
 
   function onMouseMove(e: MouseEvent) {
     // for each mousemovement, do action
@@ -160,5 +219,18 @@ function GameInputController({ children }: PropsWithChildren) {
     };
   }, []);
 
-  return <>{children}</>;
+  return (
+    <GameInputStoreContext.Provider value={store}>
+      {children}
+    </GameInputStoreContext.Provider>
+  );
+}
+
+export function useGameInput() {
+  const storeContext = useContext(GameInputStoreContext);
+  if (!storeContext) {
+    throw Error("No game input context.");
+  }
+  const state = useSyncExternalStore(storeContext.subscribe, storeContext.get);
+  return state;
 }
