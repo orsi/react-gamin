@@ -4,7 +4,7 @@ import { useMovement } from "./components/System";
 import Animation from "./components/Animation";
 import useSpriteSheet from "./components/Sprite";
 import { useGameInput } from "./components/Input";
-import { useEntity, useBody, usePosition } from "./components/ecs";
+import { useEntity, useBody, usePosition } from "./components/Entity";
 
 export default function Character1() {
   const characterSpriteSheet = useSpriteSheet({

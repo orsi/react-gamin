@@ -1,13 +1,13 @@
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, PropsWithChildren, SetStateAction, useState } from "react";
 
-type Component = [any, Dispatch<SetStateAction<any>>];
-type EntityComponent = {
-  [key: string]: Component;
+type TComponent = [any, Dispatch<SetStateAction<any>>];
+type TEntityComponent = {
+  [key: string]: TComponent;
 };
-type EntityId = {
+type TEntityId = {
   id: string;
 };
-export type Entity = EntityId & { [key: string]: any };
+export type TEntity = TEntityId & { [key: string]: any };
 export function useEntity(id: string) {
   const [entity] = useState({
     id,
@@ -20,7 +20,7 @@ interface Body {
   height?: number;
   width?: number;
 }
-export function useBody(entity: Entity, initialBody?: Body) {
+export function useBody(entity: TEntity, initialBody?: Body) {
   if (!entity) {
     throw Error("Entity does not exist.");
   }
@@ -39,7 +39,7 @@ interface Position {
   y?: number;
   z?: number;
 }
-export function usePosition(entity: Entity, initialPosition?: Position) {
+export function usePosition(entity: TEntity, initialPosition?: Position) {
   if (!entity) {
     throw Error("Entity does not exist.");
   }
@@ -51,4 +51,11 @@ export function usePosition(entity: Entity, initialPosition?: Position) {
   });
   entity.position = position;
   return position;
+}
+
+export default function Entity({
+  children,
+  id,
+}: PropsWithChildren<{ id: string }>) {
+  return <>{children}</>;
 }

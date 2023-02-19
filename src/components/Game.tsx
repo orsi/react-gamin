@@ -31,20 +31,18 @@ export default function Game({ children }: PropsWithChildren<GameProps>) {
   }, []);
 
   return (
-    <GameStore.Provider>
-      <GameInput>
-        <div
-          ref={gameDivRef}
-          style={{
-            position: "relative",
-            height,
-            width,
-          }}
-        >
-          {children}
-        </div>
-      </GameInput>
-    </GameStore.Provider>
+    <div
+      ref={gameDivRef}
+      style={{
+        position: "relative",
+        height,
+        width,
+      }}
+    >
+      <GameStore.Provider>
+        <GameInput>{children}</GameInput>
+      </GameStore.Provider>
+    </div>
   );
 }
 

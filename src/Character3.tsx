@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import tile000Image from "./assets/npc/tile000.png";
 import tile001Image from "./assets/npc/tile001.png";
 import tile002Image from "./assets/npc/tile002.png";
@@ -15,7 +15,7 @@ import tile012Image from "./assets/npc/tile012.png";
 import tile013Image from "./assets/npc/tile013.png";
 import tile014Image from "./assets/npc/tile014.png";
 import tile015Image from "./assets/npc/tile015.png";
-import { useEntity, useBody, usePosition } from "./components/ecs";
+import Entity, { useEntity, useBody, usePosition } from "./components/Entity";
 import { useGameInput } from "./components/Input";
 import {
   Sprite,
@@ -24,9 +24,10 @@ import {
   SpriteAnimationState,
 } from "./components/Sprite";
 import { useMovement } from "./components/System";
-import useFrame from "./components/useFrame";
+import useLogicLoop from "./components/useLogicLoop";
 
 export default function Character3() {
+  const id = useId();
   const [state, setState] = useState<string>("idle");
   const entity = useEntity("character");
   const body = useBody(entity);
@@ -35,87 +36,60 @@ export default function Character3() {
   const move = useMovement(entity);
 
   const input = useGameInput();
-  const frame = useRef(0);
-  const lastUpdate = useRef(Date.now());
-  const update = (callback: () => void) => {
-    const now = Date.now();
-    const delta = now - lastUpdate.current;
-    if (delta > 1000 / 60) {
-      callback();
-      lastUpdate.current = now;
-    }
-    frame.current = requestAnimationFrame(() => update(callback));
-  };
-  useFrame(() => {
-    if (input.KEYBOARD_UP) {
+  useLogicLoop(() => {
+    if (input.KEYBOARD_UP || input.GAMEPAD_BUTTON_12) {
       setState("walk-up");
       move("up");
-    }
-  });
-  useEffect(() => {
-    if (input.KEYBOARD_DOWN) {
-      update(() => {
-        setState("walk-down");
-        move("down");
-      });
-    } else if (input.KEYBOARD_LEFT) {
-      update(() => {
-        setState("walk-left");
-        move("left");
-      });
-    } else if (input.KEYBOARD_RIGHT) {
-      update(() => {
-        setState("walk-right");
-        move("right");
-      });
+    } else if (input.KEYBOARD_DOWN || input.GAMEPAD_BUTTON_13) {
+      setState("walk-down");
+      move("down");
+    } else if (input.KEYBOARD_LEFT || input.GAMEPAD_BUTTON_14) {
+      setState("walk-left");
+      move("left");
+    } else if (input.KEYBOARD_RIGHT || input.GAMEPAD_BUTTON_15) {
+      setState("walk-right");
+      move("right");
     } else {
       setState("idle");
-      cancelAnimationFrame(frame.current);
     }
-
-    if (input.KEYBOARD_SPACE) {
-      setState("interact");
-    }
-
-    return () => {
-      cancelAnimationFrame(frame.current);
-    };
   }, [input]);
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: "0",
-        left: "0",
-        transform,
-      }}
-    >
-      <SpriteAnimationStateMachine state={state}>
-        <SpriteAnimationState id={`idle`}>
-          <Sprite src={tile000Image} />
-        </SpriteAnimationState>
-        <SpriteAnimationState id={`walk-up`}>
-          <Animation
-            srcs={[tile008Image, tile009Image, tile010Image, tile011Image]}
-          />
-        </SpriteAnimationState>
-        <SpriteAnimationState id={`walk-down`}>
-          <Animation
-            srcs={[tile000Image, tile001Image, tile002Image, tile003Image]}
-          />
-        </SpriteAnimationState>
-        <SpriteAnimationState id={`walk-left`}>
-          <Animation
-            srcs={[tile012Image, tile013Image, tile014Image, tile015Image]}
-          />
-        </SpriteAnimationState>
-        <SpriteAnimationState id={`walk-right`}>
-          <Animation
-            srcs={[tile004Image, tile005Image, tile006Image, tile007Image]}
-          />
-        </SpriteAnimationState>
-      </SpriteAnimationStateMachine>
-    </div>
+    <Entity id={id}>
+      <div
+        style={{
+          position: "absolute",
+          top: "0",
+          left: "0",
+          transform,
+        }}
+      >
+        <SpriteAnimationStateMachine state={state}>
+          <SpriteAnimationState id={`idle`}>
+            <Sprite src={tile000Image} />
+          </SpriteAnimationState>
+          <SpriteAnimationState id={`walk-up`}>
+            <Animation
+              srcs={[tile008Image, tile009Image, tile010Image, tile011Image]}
+            />
+          </SpriteAnimationState>
+          <SpriteAnimationState id={`walk-down`}>
+            <Animation
+              srcs={[tile000Image, tile001Image, tile002Image, tile003Image]}
+            />
+          </SpriteAnimationState>
+          <SpriteAnimationState id={`walk-left`}>
+            <Animation
+              srcs={[tile012Image, tile013Image, tile014Image, tile015Image]}
+            />
+          </SpriteAnimationState>
+          <SpriteAnimationState id={`walk-right`}>
+            <Animation
+              srcs={[tile004Image, tile005Image, tile006Image, tile007Image]}
+            />
+          </SpriteAnimationState>
+        </SpriteAnimationStateMachine>
+      </div>
+    </Entity>
   );
 }

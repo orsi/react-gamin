@@ -27,40 +27,51 @@ import {
   useSyncExternalStore,
 } from "react";
 
-const INPUT_FRAME_MS = 1000 / 60;
-export type KEYBOARD = "up" | "down" | "left" | "right" | "space";
-export type GAMEPAD = `button-${number}`;
-export type MOUSE = "left-click" | "right-click" | "move";
-
+const INPUT_TICK_MS = 1000 / 60;
 interface IGameInputStore {
   KEYBOARD_UP: boolean;
   KEYBOARD_DOWN: boolean;
   KEYBOARD_LEFT: boolean;
   KEYBOARD_RIGHT: boolean;
   KEYBOARD_SPACE: boolean;
-  KEYBOARD_ENTER: boolean;
-  KEYBOARD_SHIFT_LEFT: boolean;
   GAMEPAD_BUTTON_12: boolean;
   GAMEPAD_BUTTON_13: boolean;
   GAMEPAD_BUTTON_14: boolean;
   GAMEPAD_BUTTON_15: boolean;
 }
-
 const initialState: IGameInputStore = {
   KEYBOARD_UP: false,
   KEYBOARD_DOWN: false,
   KEYBOARD_LEFT: false,
   KEYBOARD_RIGHT: false,
   KEYBOARD_SPACE: false,
-  KEYBOARD_ENTER: false,
-  KEYBOARD_SHIFT_LEFT: false,
   GAMEPAD_BUTTON_12: false,
   GAMEPAD_BUTTON_13: false,
   GAMEPAD_BUTTON_14: false,
   GAMEPAD_BUTTON_15: false,
 };
 
-function useGameInputStore() {
+const GameInputStoreContext = createContext<{
+  get: () => IGameInputStore;
+  subscribe: (callback: () => void) => () => void;
+} | null>(null);
+
+export function useGameInput<T>(selector: (store: IGameInputStore) => T): T;
+export function useGameInput<T>(): IGameInputStore;
+export function useGameInput<T>(selector?: (store: IGameInputStore) => T) {
+  const storeContext = useContext(GameInputStoreContext);
+  if (!storeContext) {
+    throw Error("No input context.");
+  }
+  const state = useSyncExternalStore(storeContext.subscribe, () =>
+    selector ? selector(storeContext.get()) : storeContext.get()
+  );
+  return state;
+}
+
+interface GameInputProps {}
+export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
+  // setup store
   const store = useRef(initialState);
   const subscribers = useRef(new Set<() => void>());
 
@@ -76,42 +87,70 @@ function useGameInputStore() {
     };
   }, []);
 
-  return {
-    get,
-    set,
-    subscribe,
-  };
-}
-
-const GameInputStoreContext = createContext<ReturnType<
-  typeof useGameInputStore
-> | null>(null);
-interface GameInputProps {}
-export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
-  const store = useGameInputStore();
-  const gamepadRequestAnimationFrame = useRef(0);
+  const pollingInputFrame = useRef(0);
   const lastUpdate = useRef(Date.now());
 
-  function startPollingGamepadInputs() {
+  const startPollingInput = useCallback(() => {
     const now = Date.now();
     const delta = now - lastUpdate.current;
 
-    if (delta > INPUT_FRAME_MS) {
+    if (delta > INPUT_TICK_MS) {
       handleGamepads();
       lastUpdate.current = now;
     }
 
-    gamepadRequestAnimationFrame.current = requestAnimationFrame(
-      startPollingGamepadInputs
-    );
-  }
+    pollingInputFrame.current = requestAnimationFrame(startPollingInput);
+  }, []);
 
-  function stopPollingGamepadInputs() {
-    if (gamepadRequestAnimationFrame.current) {
-      cancelAnimationFrame(gamepadRequestAnimationFrame.current);
+  const stopPollingInput = useCallback(() => {
+    handleGamepads();
+    cancelAnimationFrame(pollingInputFrame.current);
+  }, []);
+
+  const onKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.code === "ArrowUp" && !get().KEYBOARD_UP) {
+      set({ KEYBOARD_UP: true });
     }
-  }
+    if (e.code === "ArrowDown" && !get().KEYBOARD_DOWN) {
+      set({ KEYBOARD_DOWN: true });
+    }
+    if (e.code === "ArrowLeft" && !get().KEYBOARD_LEFT) {
+      set({ KEYBOARD_LEFT: true });
+    }
+    if (e.code === "ArrowRight" && !get().KEYBOARD_RIGHT) {
+      set({ KEYBOARD_RIGHT: true });
+    }
+    if (e.code === "Space" && !get().KEYBOARD_SPACE) {
+      set({ KEYBOARD_SPACE: true });
+    }
+  }, []);
 
+  const onKeyUp = useCallback((e: KeyboardEvent) => {
+    if (e.code === "ArrowUp" && get().KEYBOARD_UP) {
+      set({ KEYBOARD_UP: false });
+    }
+    if (e.code === "ArrowDown" && get().KEYBOARD_DOWN) {
+      set({ KEYBOARD_DOWN: false });
+    }
+    if (e.code === "ArrowLeft" && get().KEYBOARD_LEFT) {
+      set({ KEYBOARD_LEFT: false });
+    }
+    if (e.code === "ArrowRight" && get().KEYBOARD_RIGHT) {
+      set({ KEYBOARD_RIGHT: false });
+    }
+    if (e.code === "Space" && get().KEYBOARD_SPACE) {
+      set({ KEYBOARD_SPACE: false });
+    }
+  }, []);
+
+  function onMouseMove(e: MouseEvent) {}
+  function onMouseClick(e: MouseEvent) {}
+  function onTouchStart(e: TouchEvent) {}
+  function onTouchMove(e: TouchEvent) {}
+  function onTouchEnd(e: TouchEvent) {}
+  function onTouchCancel(e: TouchEvent) {}
+  function onGamepadConnected(e: GamepadEvent) {}
+  function onGamepadDisonnected(e: GamepadEvent) {}
   function handleGamepads() {
     const gamepads = navigator.getGamepads();
     if (!gamepads) {
@@ -122,92 +161,47 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
       return;
     }
 
-    // if gamepad bindings, do action
-  }
-
-  function onGamepadConnected(event: GamepadEvent) {
-    startPollingGamepadInputs();
-  }
-
-  function onGamepadDisonnected(event: GamepadEvent) {
-    stopPollingGamepadInputs();
-  }
-
-  const onKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.code === "ArrowUp" && !store.get().KEYBOARD_UP) {
-      store.set({ KEYBOARD_UP: true });
+    if (gamepad.buttons[12].pressed && !get().GAMEPAD_BUTTON_12) {
+      set({ GAMEPAD_BUTTON_12: true });
+    } else if (!gamepad.buttons[12].pressed && get().GAMEPAD_BUTTON_12) {
+      set({ GAMEPAD_BUTTON_12: false });
     }
-    if (e.code === "ArrowDown" && !store.get().KEYBOARD_DOWN) {
-      store.set({ KEYBOARD_DOWN: true });
+    if (gamepad.buttons[13].pressed && !get().GAMEPAD_BUTTON_13) {
+      set({ GAMEPAD_BUTTON_13: true });
+    } else if (!gamepad.buttons[13].pressed && get().GAMEPAD_BUTTON_13) {
+      set({ GAMEPAD_BUTTON_13: false });
     }
-    if (e.code === "ArrowLeft" && !store.get().KEYBOARD_LEFT) {
-      store.set({ KEYBOARD_LEFT: true });
+    if (gamepad.buttons[14].pressed && !get().GAMEPAD_BUTTON_14) {
+      set({ GAMEPAD_BUTTON_14: true });
+    } else if (!gamepad.buttons[14].pressed && get().GAMEPAD_BUTTON_14) {
+      set({ GAMEPAD_BUTTON_14: false });
     }
-    if (e.code === "ArrowRight" && !store.get().KEYBOARD_RIGHT) {
-      store.set({ KEYBOARD_RIGHT: true });
+    if (gamepad.buttons[15].pressed && !get().GAMEPAD_BUTTON_15) {
+      set({ GAMEPAD_BUTTON_15: true });
+    } else if (!gamepad.buttons[15].pressed && get().GAMEPAD_BUTTON_15) {
+      set({ GAMEPAD_BUTTON_15: false });
     }
-    if (e.code === "Space" && !store.get().KEYBOARD_SPACE) {
-      store.set({ KEYBOARD_SPACE: true });
-    }
-    if (e.code === "ShiftLeft" && !store.get().KEYBOARD_SHIFT_LEFT) {
-      store.set({ KEYBOARD_SHIFT_LEFT: true });
-    }
-    if (e.code === "Enter" && !store.get().KEYBOARD_ENTER) {
-      store.set({ KEYBOARD_ENTER: true });
-    }
-  }, []);
-
-  const onKeyUp = useCallback((e: KeyboardEvent) => {
-    if (e.code === "ArrowUp" && store.get().KEYBOARD_UP) {
-      store.set({ KEYBOARD_UP: false });
-    }
-    if (e.code === "ArrowDown" && store.get().KEYBOARD_DOWN) {
-      store.set({ KEYBOARD_DOWN: false });
-    }
-    if (e.code === "ArrowLeft" && store.get().KEYBOARD_LEFT) {
-      store.set({ KEYBOARD_LEFT: false });
-    }
-    if (e.code === "ArrowRight" && store.get().KEYBOARD_RIGHT) {
-      store.set({ KEYBOARD_RIGHT: false });
-    }
-    if (e.code === "Space" && store.get().KEYBOARD_SPACE) {
-      store.set({ KEYBOARD_SPACE: false });
-    }
-    if (e.code === "ShiftLeft" && store.get().KEYBOARD_SHIFT_LEFT) {
-      store.set({ KEYBOARD_SHIFT_LEFT: false });
-    }
-    if (e.code === "Enter" && store.get().KEYBOARD_ENTER) {
-      store.set({ KEYBOARD_ENTER: false });
-    }
-  }, []);
-
-  function onMouseMove(e: MouseEvent) {
-    // for each mousemovement, do action
-  }
-
-  function onMouseClick(e: MouseEvent) {
-    // for each mousemovement, do action
   }
 
   useEffect(() => {
-    // if any key bindings
+    // keyboard
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
-
-    // if any mouse bindings
+    // mouse
     window.addEventListener("click", onMouseClick);
     window.addEventListener("mousemove", onMouseMove);
 
-    // if any gamepad bindings
+    // touch
+    window.addEventListener("touchstart", onTouchStart);
+    window.addEventListener("touchmove", onTouchMove);
+    window.addEventListener("touchend", onTouchEnd);
+    window.addEventListener("touchcancel", onTouchCancel);
+
+    // gamepad
     window.addEventListener("gamepadconnected", onGamepadConnected);
     window.addEventListener("gamepaddisconnected", onGamepadDisonnected);
-    const gamepads = navigator.getGamepads();
-    if (gamepads) {
-      gamepadRequestAnimationFrame.current = requestAnimationFrame(
-        startPollingGamepadInputs
-      );
-    }
 
+    startPollingInput();
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
@@ -215,22 +209,18 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("gamepadconnected", onGamepadConnected);
       window.removeEventListener("gamepaddisconnected", onGamepadDisonnected);
-      cancelAnimationFrame(gamepadRequestAnimationFrame.current);
+      stopPollingInput();
     };
   }, []);
 
   return (
-    <GameInputStoreContext.Provider value={store}>
+    <GameInputStoreContext.Provider
+      value={{
+        get,
+        subscribe,
+      }}
+    >
       {children}
     </GameInputStoreContext.Provider>
   );
-}
-
-export function useGameInput() {
-  const storeContext = useContext(GameInputStoreContext);
-  if (!storeContext) {
-    throw Error("No game input context.");
-  }
-  const state = useSyncExternalStore(storeContext.subscribe, storeContext.get);
-  return state;
 }

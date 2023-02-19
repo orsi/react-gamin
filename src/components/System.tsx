@@ -1,10 +1,10 @@
 import { useCallback } from "react";
-import { Entity } from "./ecs";
+import { TEntity } from "./Entity";
 
 const SPEED = 5;
 
-const entities = new Map<string, Entity>();
-export function useMovement(entity: Entity) {
+const entities = new Map<string, TEntity>();
+export function useMovement(entity: TEntity) {
   if (!entity.position) {
     throw Error("Entity has no position.");
   }

@@ -1,7 +1,7 @@
 import { Fragment, ReactNode } from "react";
 import overworldImage from "./assets/Overworld.png";
 import useSpriteSheet from "./components/Sprite";
-import { useEntity, useBody, usePosition } from "./components/ecs";
+import { useEntity, useBody, usePosition } from "./components/Entity";
 import { useMovement } from "./components/System";
 
 export function DefaultMap() {
