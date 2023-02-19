@@ -1,120 +1,3 @@
-import {
-  useRef,
-  useCallback,
-  createContext,
-  PropsWithChildren,
-  useEffect,
-  useContext,
-  useSyncExternalStore,
-} from "react";
-
-interface IGameInput {
-  UP: boolean;
-  RIGHT: boolean;
-  DOWN: boolean;
-  LEFT: boolean;
-}
-function useGameInputStore() {
-  const gameInput = useRef({
-    UP: false,
-    RIGHT: false,
-    DOWN: false,
-    LEFT: false,
-  });
-
-  const subscribers = useRef(new Set<() => void>());
-  const subscribe = useCallback((callback: () => void) => {
-    subscribers.current.add(callback);
-    return () => {
-      subscribers.current.delete(callback);
-    };
-  }, []);
-
-  const get = useCallback(() => gameInput.current, []);
-
-  const set = useCallback((value: Partial<IGameInput>) => {
-    const nextState = { ...gameInput.current, ...value };
-    let update = false;
-    for (const [key, value] of Object.entries(nextState)) {
-      if (!gameInput.current[key] === value) {
-        update = true;
-        gameInput.current = nextState;
-        break;
-      }
-    }
-
-    if (!update) {
-      return;
-    }
-
-    subscribers.current.forEach((callback) => callback());
-  }, []);
-
-  return {
-    subscribe,
-    get,
-    set,
-  };
-}
-export const GameInputContext = createContext<null | ReturnType<
-  typeof useGameInputStore
->>(null);
-
-export function useGameInput(
-  selector: (input: IGameInput) => IGameInput[keyof IGameInput]
-): IGameInput[keyof IGameInput];
-export function useGameInput(
-  selector?: (input: IGameInput) => IGameInput[keyof IGameInput]
-): IGameInput;
-export function useGameInput(
-  selector?: (input: IGameInput) => IGameInput[keyof IGameInput]
-) {
-  const gameInputStore = useContext(GameInputContext);
-  if (!gameInputStore) {
-    throw new Error("Game Input Store not available.");
-  }
-
-  const state = useSyncExternalStore(gameInputStore.subscribe, () =>
-    selector !== undefined
-      ? selector(gameInputStore.get())
-      : gameInputStore.get()
-  );
-  return state;
-}
-
-export const GamepadButtons = {
-  BUTTON_0: 0,
-  BUTTON_1: 1,
-  BUTTON_2: 2,
-  BUTTON_3: 3,
-  BUTTON_4: 4,
-  BUTTON_5: 5,
-  BUTTON_6: 6,
-  BUTTON_7: 7,
-  BUTTON_8: 8,
-  BUTTON_9: 9,
-  BUTTON_10: 10,
-  BUTTON_11: 11,
-  BUTTON_12: 12,
-  BUTTON_13: 13,
-  BUTTON_14: 14,
-  BUTTON_15: 15,
-  BUTTON_16: 16,
-} as const;
-export const KeyboardInputs = {
-  UP: "ArrowUp",
-  RIGHT: "ArrowRight",
-  DOWN: "ArrowDown",
-  LEFT: "ArrowLeft",
-} as const;
-export const Inputs = {
-  keyboard: KeyboardInputs,
-  gamepad: GamepadButtons,
-} as const;
-interface GameActionInputMap {
-  [key: string]: any;
-}
-
 // 8bit controller buttons
 // 0 - B
 // 1 - A
@@ -134,128 +17,148 @@ interface GameActionInputMap {
 // 15 - Right
 // 16 - Home/8bit
 
+import { useRef, PropsWithChildren, useEffect, useCallback } from "react";
+import { createStore } from "./createStore";
+
 const INPUT_FRAME_MS = 1000 / 60;
-export function createGameInput(inputMap?: GameActionInputMap) {
-  function GameInputProvider({ children }: PropsWithChildren) {
-    const gameInputStore = useGameInputStore();
+export type KEYBOARD = "up" | "down" | "left" | "right" | "space";
+export type GAMEPAD = `button-${number}`;
+export type MOUSE = "left-click" | "right-click" | "move";
 
-    const inputFrames = useRef(0);
-    const lastUpdate = useRef(Date.now());
-    function handleInputs() {
-      const now = Date.now();
-      const delta = now - lastUpdate.current;
+interface IGameInputStore {
+  KEYBOARD_UP: boolean;
+  KEYBOARD_DOWN: boolean;
+  KEYBOARD_LEFT: boolean;
+  KEYBOARD_RIGHT: boolean;
+  GAMEPAD_BUTTON_12: boolean;
+  GAMEPAD_BUTTON_13: boolean;
+  GAMEPAD_BUTTON_14: boolean;
+  GAMEPAD_BUTTON_15: boolean;
+}
+const GameInputStore = createStore({
+  KEYBOARD_UP: false,
+  KEYBOARD_DOWN: false,
+  KEYBOARD_LEFT: false,
+  KEYBOARD_RIGHT: false,
+  GAMEPAD_BUTTON_12: false,
+  GAMEPAD_BUTTON_13: false,
+  GAMEPAD_BUTTON_14: false,
+  GAMEPAD_BUTTON_15: false,
+});
 
-      if (delta > INPUT_FRAME_MS) {
-        handleGamepads();
-        lastUpdate.current = now;
-      }
+export const useGameInput = GameInputStore.useStore;
 
-      inputFrames.current = requestAnimationFrame(handleInputs);
+interface GameInputProps {}
+export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
+  return (
+    <GameInputStore.Provider>
+      <GameInputController>{children}</GameInputController>
+    </GameInputStore.Provider>
+  );
+}
+
+function GameInputController({ children }: PropsWithChildren) {
+  const [inputStore, setInputStore] = GameInputStore.useStore();
+
+  const gamepadRequestAnimationFrame = useRef(0);
+  const lastUpdate = useRef(Date.now());
+
+  function startPollingGamepadInputs() {
+    const now = Date.now();
+    const delta = now - lastUpdate.current;
+
+    if (delta > INPUT_FRAME_MS) {
+      handleGamepads();
+      lastUpdate.current = now;
     }
 
-    function handleGamepads() {
-      const gamepads = navigator.getGamepads();
-      if (!gamepads) {
-        return;
-      }
-      const gamepad = gamepads[0];
-      if (!gamepad) {
-        return;
-      }
-
-      if (gamepad.buttons[12].pressed) {
-        gameInputStore.set({ UP: true });
-      } else {
-        gameInputStore.set({ UP: false });
-      }
-
-      if (gamepad.buttons[15].pressed) {
-        gameInputStore.set({ RIGHT: true });
-      } else {
-        gameInputStore.set({ RIGHT: false });
-      }
-
-      if (gamepad.buttons[13].pressed) {
-        gameInputStore.set({ DOWN: true });
-      } else {
-        gameInputStore.set({ DOWN: false });
-      }
-
-      if (gamepad.buttons[14].pressed) {
-        gameInputStore.set({ LEFT: true });
-      } else {
-        gameInputStore.set({ LEFT: false });
-      }
-    }
-
-    function onGamepadConnected(event: GamepadEvent) {
-      handleInputs();
-    }
-
-    function onGamepadDisonnected(event: GamepadEvent) {
-      if (inputFrames.current) {
-        cancelAnimationFrame(inputFrames.current);
-      }
-    }
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.code === "ArrowUp") {
-        gameInputStore.set({ UP: true });
-      }
-      if (e.code === "ArrowRight") {
-        gameInputStore.set({ RIGHT: true });
-      }
-      if (e.code === "ArrowDown") {
-        gameInputStore.set({ DOWN: true });
-      }
-      if (e.code === "ArrowLeft") {
-        gameInputStore.set({ LEFT: true });
-      }
-    }
-
-    function onKeyUp(e: KeyboardEvent) {
-      if (e.code === "ArrowUp") {
-        gameInputStore.set({ UP: false });
-      }
-      if (e.code === "ArrowRight") {
-        gameInputStore.set({ RIGHT: false });
-      }
-      if (e.code === "ArrowDown") {
-        gameInputStore.set({ DOWN: false });
-      }
-      if (e.code === "ArrowLeft") {
-        gameInputStore.set({ LEFT: false });
-      }
-    }
-
-    useEffect(() => {
-      window.addEventListener("keydown", onKeyDown);
-      window.addEventListener("keyup", onKeyUp);
-      window.addEventListener("gamepadconnected", onGamepadConnected);
-      window.addEventListener("gamepaddisconnected", onGamepadDisonnected);
-
-      const gamepads = navigator.getGamepads();
-      if (gamepads) {
-        inputFrames.current = requestAnimationFrame(handleInputs);
-      }
-
-      return () => {
-        window.removeEventListener("keydown", onKeyDown);
-        window.removeEventListener("keyup", onKeyUp);
-        window.removeEventListener("gamepadconnected", onGamepadConnected);
-        window.removeEventListener("gamepaddisconnected", onGamepadDisonnected);
-        cancelAnimationFrame(inputFrames.current);
-      };
-    }, []);
-
-    return (
-      <GameInputContext.Provider value={gameInputStore}>
-        {children}
-      </GameInputContext.Provider>
+    gamepadRequestAnimationFrame.current = requestAnimationFrame(
+      startPollingGamepadInputs
     );
   }
 
-  useEffect(() => {}, []);
+  function stopPollingGamepadInputs() {
+    if (gamepadRequestAnimationFrame.current) {
+      cancelAnimationFrame(gamepadRequestAnimationFrame.current);
+    }
+  }
 
-  return GameInputProvider;
+  function handleGamepads() {
+    const gamepads = navigator.getGamepads();
+    if (!gamepads) {
+      return;
+    }
+    const gamepad = gamepads[0];
+    if (!gamepad) {
+      return;
+    }
+
+    // if gamepad bindings, do action
+  }
+
+  function onGamepadConnected(event: GamepadEvent) {
+    startPollingGamepadInputs();
+  }
+
+  function onGamepadDisonnected(event: GamepadEvent) {
+    stopPollingGamepadInputs();
+  }
+
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.code === "ArrowUp") {
+        setInputStore({ KEYBOARD_UP: true });
+      }
+    },
+    [inputStore, setInputStore]
+  );
+
+  const onKeyUp = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.code === "ArrowUp") {
+        setInputStore({ KEYBOARD_UP: false });
+      }
+    },
+    [inputStore, setInputStore]
+  );
+
+  function onMouseMove(e: MouseEvent) {
+    // for each mousemovement, do action
+  }
+
+  function onMouseClick(e: MouseEvent) {
+    // for each mousemovement, do action
+  }
+
+  useEffect(() => {
+    // if any key bindings
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+
+    // if any mouse bindings
+    window.addEventListener("click", onMouseClick);
+    window.addEventListener("mousemove", onMouseMove);
+
+    // if any gamepad bindings
+    window.addEventListener("gamepadconnected", onGamepadConnected);
+    window.addEventListener("gamepaddisconnected", onGamepadDisonnected);
+    const gamepads = navigator.getGamepads();
+    if (gamepads) {
+      gamepadRequestAnimationFrame.current = requestAnimationFrame(
+        startPollingGamepadInputs
+      );
+    }
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("click", onMouseClick);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("gamepadconnected", onGamepadConnected);
+      window.removeEventListener("gamepaddisconnected", onGamepadDisonnected);
+      cancelAnimationFrame(gamepadRequestAnimationFrame.current);
+    };
+  }, []);
+
+  return <>{children}</>;
 }

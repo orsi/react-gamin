@@ -8,6 +8,7 @@ import tile004Image from "./assets/npc/tile004.png";
 import tile005Image from "./assets/npc/tile005.png";
 import tile006Image from "./assets/npc/tile006.png";
 import tile007Image from "./assets/npc/tile007.png";
+import { useGameStore } from "./components/Game";
 import {
   Sprite,
   Animation,
@@ -17,6 +18,8 @@ import {
 
 export default function Character2() {
   const [state, setState] = useState<string>("idle");
+
+  const [test] = useGameStore((store) => store.test);
 
   const changeState = useCallback(() => {
     setState((value) => {
@@ -35,13 +38,13 @@ export default function Character2() {
   }, [state, setState]);
 
   return (
-    <div style={{ padding: "100px" }} onClick={changeState}>
+    <div style={{ display: 'inline-block', padding: "24px" }} onClick={changeState}>
       <Sprite src={tile006Image} />
       <div></div>
       <Animation
         srcs={[tile000Image, tile001Image, tile002Image, tile003Image]}
       />
-      <div></div>
+      <div>{test}</div>
       <SpriteAnimationStateMachine state={state}>
         <SpriteAnimationState id={`idle`}>
           <Sprite src={tile000Image} />
