@@ -15,23 +15,23 @@ import tile012Image from "./assets/npc/tile012.png";
 import tile013Image from "./assets/npc/tile013.png";
 import tile014Image from "./assets/npc/tile014.png";
 import tile015Image from "./assets/npc/tile015.png";
-import Entity, { useEntity, useBody, usePosition } from "./components/Entity";
-import { useGameInput } from "./components/Input";
+import { useOldEntity, useOldBody, useOldPosition } from "./Components";
+import { useGameInput } from "../library/Input";
 import {
   Sprite,
   Animation,
   SpriteAnimationStateMachine,
   SpriteAnimationState,
-} from "./components/Sprite";
-import { useMovement } from "./components/System";
-import useLogicLoop from "./components/useLogicLoop";
+} from "./Sprite";
+import { useMovement } from "./MovementSystem";
+import useLogicLoop from "./useLogicLoop";
 
 export default function Character3() {
   const id = useId();
   const [state, setState] = useState<string>("idle");
-  const entity = useEntity("character");
-  const body = useBody(entity);
-  const [position] = usePosition(entity, { x: 240, y: 200, z: 0 });
+  const entity = useOldEntity("character");
+  const body = useOldBody(entity);
+  const [position] = useOldPosition(entity, { x: 240, y: 200, z: 0 });
   const transform = `translate(${position.x}px, ${position.y}px)`;
   const move = useMovement(entity);
 
@@ -55,41 +55,39 @@ export default function Character3() {
   }, [input]);
 
   return (
-    <Entity id={id}>
-      <div
-        style={{
-          position: "absolute",
-          top: "0",
-          left: "0",
-          transform,
-        }}
-      >
-        <SpriteAnimationStateMachine state={state}>
-          <SpriteAnimationState id={`idle`}>
-            <Sprite src={tile000Image} />
-          </SpriteAnimationState>
-          <SpriteAnimationState id={`walk-up`}>
-            <Animation
-              srcs={[tile008Image, tile009Image, tile010Image, tile011Image]}
-            />
-          </SpriteAnimationState>
-          <SpriteAnimationState id={`walk-down`}>
-            <Animation
-              srcs={[tile000Image, tile001Image, tile002Image, tile003Image]}
-            />
-          </SpriteAnimationState>
-          <SpriteAnimationState id={`walk-left`}>
-            <Animation
-              srcs={[tile012Image, tile013Image, tile014Image, tile015Image]}
-            />
-          </SpriteAnimationState>
-          <SpriteAnimationState id={`walk-right`}>
-            <Animation
-              srcs={[tile004Image, tile005Image, tile006Image, tile007Image]}
-            />
-          </SpriteAnimationState>
-        </SpriteAnimationStateMachine>
-      </div>
-    </Entity>
+    <div
+      style={{
+        position: "absolute",
+        top: "0",
+        left: "0",
+        transform,
+      }}
+    >
+      <SpriteAnimationStateMachine state={state}>
+        <SpriteAnimationState id={`idle`}>
+          <Sprite src={tile000Image} />
+        </SpriteAnimationState>
+        <SpriteAnimationState id={`walk-up`}>
+          <Animation
+            srcs={[tile008Image, tile009Image, tile010Image, tile011Image]}
+          />
+        </SpriteAnimationState>
+        <SpriteAnimationState id={`walk-down`}>
+          <Animation
+            srcs={[tile000Image, tile001Image, tile002Image, tile003Image]}
+          />
+        </SpriteAnimationState>
+        <SpriteAnimationState id={`walk-left`}>
+          <Animation
+            srcs={[tile012Image, tile013Image, tile014Image, tile015Image]}
+          />
+        </SpriteAnimationState>
+        <SpriteAnimationState id={`walk-right`}>
+          <Animation
+            srcs={[tile004Image, tile005Image, tile006Image, tile007Image]}
+          />
+        </SpriteAnimationState>
+      </SpriteAnimationStateMachine>
+    </div>
   );
 }

@@ -1,17 +1,15 @@
-import Character2 from "./Character2";
-import Character3 from "./Character3";
-import Game, { Stage } from "./components/Game";
-import { DefaultMap } from "./DefaultMap";
+import Game from "./library/Game";
+import Character2 from "./components/Character2";
+import Character4 from "./components/Character4";
+import { Objects } from "./components/Objects";
 
 function App() {
   return (
     <div className="App">
       <Game>
-        <Stage>
-          <DefaultMap />
-          <Character2 />
-          <Character3 />
-        </Stage>
+        <Objects />
+        <Character2 />
+        <Character4 />
       </Game>
     </div>
   );

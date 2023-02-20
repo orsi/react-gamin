@@ -1,10 +1,9 @@
 import { Fragment, ReactNode } from "react";
-import overworldImage from "./assets/Overworld.png";
-import useSpriteSheet from "./components/Sprite";
-import { useEntity, useBody, usePosition } from "./components/Entity";
-import { useMovement } from "./components/System";
+import overworldImage from "../assets/Overworld.png";
+import useSpriteSheet from "./Sprite";
+import { useBody, useMovement, usePosition } from "../library/Game";
 
-export function DefaultMap() {
+export function Objects() {
   const mapSprites = useSpriteSheet({
     cellWidth: 16,
     cellHeight: 16,
@@ -14,14 +13,13 @@ export function DefaultMap() {
   });
 
   function Tile(sprites: ReactNode[]) {
-    const entity = useEntity("tile");
-    const body = useBody(entity, { solid: true, width: 16, height: 32 });
-    const [position, setPosition] = usePosition(entity, {
+    const body = useBody({ solid: true, width: 16, height: 32 });
+    const position = usePosition({
       x: 240,
       y: 240,
       z: 0,
     });
-    useMovement(entity);
+    useMovement("tile", position, body);
 
     return (
       <div
@@ -31,7 +29,7 @@ export function DefaultMap() {
           position: "absolute",
           top: "0",
           left: "0",
-          transform: `translate(${position.x}px, ${position.y}px)`,
+          transform: `translate(${position[0].x}px, ${position[0].y}px)`,
         }}
       >
         {sprites.map((sprite, i) => (

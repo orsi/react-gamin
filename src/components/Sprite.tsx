@@ -71,7 +71,7 @@ export function createSpriteSheet(
   const [image, setImage] = useState<HTMLImageElement>();
   const [width, setWidth] = useState(0);
   const [height, setHeight] = useState(0);
-  const [sprites, setSprites] = useState([]);
+  const [sprites, setSprites] = useState<any[]>([]);
 
   let spriteSheet = spriteSheets.get(src);
   if (spriteSheet === undefined) {
@@ -115,23 +115,23 @@ export function createSpriteSheet(
           height: `${cellHeight}px`,
         } as CSSProperties,
       };
-      spriteSheet.sprites.push(sprite);
+      spriteSheet?.sprites.push(sprite);
     }
   }, [image]);
 
   spriteSheet.debug = (
     <div style={{ position: "relative" }}>
       <img src={src} alt="" />
-      {sprites.map((style, i) => {
+      {sprites.map((sprite, i) => {
         return (
           <span
             id={`sprite-marker-${i}`}
             style={{
               boxSizing: "border-box",
               fontSize: "6px",
-              left: `${style.x}px`,
+              left: `${sprite.x}px`,
               position: "absolute",
-              top: `${style.y}px`,
+              top: `${sprite.y}px`,
               boxShadow: `1px 1px 0 0 rgba(255,255,255,.2)`,
               padding: `2px`,
               width: cellWidth,

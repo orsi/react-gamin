@@ -1,10 +1,10 @@
 import characterImage from "./assets/character.png";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useMovement } from "./components/System";
-import Animation from "./components/Animation";
-import useSpriteSheet from "./components/Sprite";
-import { useGameInput } from "./components/Input";
-import { useEntity, useBody, usePosition } from "./components/Entity";
+import { useMovement } from "./MovementSystem";
+import Animation from "./Animation";
+import useSpriteSheet from "./Sprite";
+import { useGameInput } from "../library/Input";
+import { useOldEntity, useOldBody, useOldPosition } from "./Components";
 
 export default function Character1() {
   const characterSpriteSheet = useSpriteSheet({
@@ -15,9 +15,9 @@ export default function Character1() {
     src: characterImage,
   });
   const [sprite, setSprite] = useState(characterSpriteSheet[0]);
-  const entity = useEntity("character");
-  const body = useBody(entity);
-  const [position] = usePosition(entity, { x: 240, y: 200, z: 0 });
+  const entity = useOldEntity("character");
+  const body = useOldBody(entity);
+  const [position] = useOldPosition(entity, { x: 240, y: 200, z: 0 });
   const transform = `translate(${position.x}px, ${position.y}px)`;
 
   const move = useMovement(entity);
@@ -67,7 +67,7 @@ export default function Character1() {
     />
   );
 
-  const [input] = useGameInput();
+  const input = useGameInput();
   const frame = useRef(0);
   const update = useCallback((callback: () => void) => {
     callback();
@@ -75,25 +75,25 @@ export default function Character1() {
   }, []);
   useEffect(() => {
     console.log("input", input);
-    if (input.UP) {
+    if (input.KEYBOARD_UP) {
       update(() => {
         setSprite(upAnimation);
         move("up");
       });
     }
-    if (input.RIGHT) {
+    if (input.KEYBOARD_RIGHT) {
       update(() => {
         setSprite(rightAnimation);
         move("right");
       });
     }
-    if (input.DOWN) {
+    if (input.KEYBOARD_DOWN) {
       update(() => {
         setSprite(downAnimation);
         move("down");
       });
     }
-    if (input.LEFT) {
+    if (input.KEYBOARD_LEFT) {
       update(() => {
         setSprite(leftAnimation);
         move("left");
@@ -105,7 +105,7 @@ export default function Character1() {
     };
   }, [input]);
 
-  console.log('hi', transform);
+  console.log("hi", transform);
   return (
     <div
       style={{
