@@ -88,22 +88,30 @@ type TEntity = {
   components: { [key: string]: any };
 };
 const EntityContext = createContext<Store<TEntity> | null>(null);
-export const createEntity = (Component: () => JSX.Element) => () => {
-  const id = useId();
-  const store = createStore({
-    id,
-    components: {},
-  });
+export const createEntity =
+  (Component: ({ ...props }) => JSX.Element) =>
+  ({ ...props }) => {
+    const id = useId();
+    const store = createStore({
+      id,
+      components: {},
+    });
 
-  const entities = useGameState((game) => game.entities);
-  entities.add(store.get());
+    const entities = useGameState((game) => game.entities);
 
-  return (
-    <EntityContext.Provider value={store}>
-      <Component />
-    </EntityContext.Provider>
-  );
-};
+    useEffect(() => {
+      entities.add(store.get());
+      () => {
+        entities.delete(store.get());
+      };
+    }, []);
+
+    return (
+      <EntityContext.Provider value={store}>
+        <Component {...props} />
+      </EntityContext.Provider>
+    );
+  };
 
 export function useEntityStore() {
   const store = useContext(EntityContext);
