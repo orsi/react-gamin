@@ -8,7 +8,13 @@ import {
   usePosition,
 } from "../library/Game";
 
-export default createEntity(function Box() {
+type BoxProps = {
+  x?: number;
+  y?: number;
+  z?: number;
+  solid?: boolean;
+};
+export default createEntity(function Box({ x, y, z, solid }: BoxProps) {
   const mapSprites = useSpriteSheet({
     cellWidth: 16,
     cellHeight: 16,
@@ -17,11 +23,11 @@ export default createEntity(function Box() {
     src: overworldImage,
   });
 
-  const body = useBody({ solid: true, width: 16, height: 32 });
+  const body = useBody({ solid: solid ?? true, width: 16, height: 32 });
   const position = usePosition({
-    x: 240,
-    y: 240,
-    z: 0,
+    x: x ?? 240,
+    y: y ?? 240,
+    z: z ?? 0,
   });
 
   useMovementSystem();
