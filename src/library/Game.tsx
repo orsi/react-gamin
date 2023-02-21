@@ -4,30 +4,30 @@ import {
   PropsWithChildren,
   useRef,
   createContext,
-  useContext,
   CSSProperties,
   useCallback,
+  useContext,
+  useId,
+  Dispatch,
+  SetStateAction,
+  useSyncExternalStore,
 } from "react";
+import { createStore, Store } from "../components/createStore";
 import { GameInput } from "./Input";
-import { createStore } from "../components/createStore";
 
-interface GameState {
-  stages: any[];
-  systems: any[];
-  entites: any[];
-}
-const gameStore = createStore<GameState>({
-  stages: [],
-  systems: [],
-  entites: [],
-});
-export const useGameStore = gameStore.useStore;
+export type ReactState<S> = [S, Dispatch<SetStateAction<S>>];
 
-interface GameProps {
-  actions?: [{ action?: string; input: any /*Input*/ }];
-}
+export type TGameState = {
+  entities: Set<TEntity>;
+};
+export const GameContext = createContext<Store<TGameState> | null>(null);
+interface GameProps {}
 export default function Game({ children }: PropsWithChildren<GameProps>) {
-  const gameDivRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const gameStore = createStore<TGameState>({
+    entities: new Set<TEntity>(),
+  });
+
   const [width, setWidth] = useState(640);
   const [height, setHeight] = useState(480);
 
@@ -48,48 +48,102 @@ export default function Game({ children }: PropsWithChildren<GameProps>) {
 
   return (
     <div
-      ref={gameDivRef}
+      ref={ref}
       style={{
         position: "relative",
         height,
         width,
       }}
     >
-      <gameStore.Provider>
+      <GameContext.Provider value={gameStore}>
         <GameInput>{children}</GameInput>
-      </gameStore.Provider>
+      </GameContext.Provider>
     </div>
   );
 }
 
-interface IEntity {
-  id: string;
-  components?: TComponentState<TComponent<string, any>>[];
+export function useGameStore<O>() {
+  const store = useContext(GameContext);
+  if (!store) {
+    throw new Error("No game context.");
+  }
+  return store.get();
 }
-const EntityContext = createContext<null | IEntity>(null);
 
-interface EntityProps {
-  id: string;
-  components?: any[];
+export function useGameState<O>(selector: (game: TGameState) => O): O;
+export function useGameState(): TGameState;
+export function useGameState<O>(selector?: (game: TGameState) => O) {
+  const store = useContext(GameContext);
+  if (!store) {
+    throw new Error("No game context.");
+  }
+  const state = useSyncExternalStore(store.subscribe, () =>
+    selector ? selector(store.get()) : store.get()
+  );
+  return state;
 }
-export function Entity({ components, id }: EntityProps) {
-  const EntityRenderer = () => {
-    const style: CSSProperties = {
-      position: "absolute",
-      top: "0",
-      left: "0",
-    };
-    const [sprite] = components?.find((c) => c[0].name === "Sprite");
-    const [position] = components?.find((c) => c[0].name === "Position");
-    if (position) {
-      style.transform = `translate(${position.x}px, ${position.y}px)`;
-    }
-    return <img style={style} src={sprite.src} alt="" />;
-  };
+
+type TEntity = {
+  id: string;
+  components: { [key: string]: any };
+};
+const EntityContext = createContext<Store<TEntity> | null>(null);
+export const createEntity = (Component: () => JSX.Element) => () => {
+  const id = useId();
+  const store = createStore({
+    id,
+    components: {},
+  });
+
+  const entities = useGameState((game) => game.entities);
+  entities.add(store.get());
+
   return (
-    <EntityContext.Provider value={{ id, components }}>
-      <EntityRenderer />
+    <EntityContext.Provider value={store}>
+      <Component />
     </EntityContext.Provider>
+  );
+};
+
+export function useEntityStore() {
+  const store = useContext(EntityContext);
+  if (!store) {
+    throw new Error("No entity context.");
+  }
+
+  return store.get();
+}
+
+export function useEntityState<O>(selector: (entity: TEntity) => O): O;
+export function useEntityState(): TEntity;
+export function useEntityState<O>(selector?: (entity: TEntity) => O) {
+  const entity = useContext(EntityContext);
+  if (!entity) {
+    throw new Error("No entity context.");
+  }
+
+  const state = useSyncExternalStore(entity.subscribe, () =>
+    selector ? selector(entity.get()) : entity.get()
+  );
+
+  return state;
+}
+
+interface RenderProps extends PropsWithChildren {
+  position?: IPosition;
+}
+export function Render({ children, position }: RenderProps) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: "0",
+        left: "0",
+        transform: `translate(${position?.x}px, ${position?.y}px)`,
+      }}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -103,14 +157,15 @@ export interface IBody {
   width?: number;
 }
 type TBodyComponent = TComponent<"Body", IBody>;
-export function useBody(initialBody?: IBody): TComponentState<TBodyComponent> {
-  const state = useState<TBodyComponent>({
-    name: "Body",
+export function useBody(initialBody?: IBody) {
+  const state = useState<IBody>({
     solid: true,
     width: 10,
     height: 10,
     ...initialBody,
   });
+  const entity = useEntityState();
+  entity.components.body = state;
   return state;
 }
 
@@ -120,105 +175,76 @@ export interface IPosition {
   z?: number;
 }
 type TPositionComponent = TComponent<"Position", IPosition>;
-export function usePosition(
-  initialPosition?: IPosition
-): TComponentState<TPositionComponent> {
-  const state = useState<TPositionComponent>({
-    name: "Position",
+export function usePosition(initialPosition?: IPosition) {
+  const state = useState<IPosition>({
     x: 0,
     y: 0,
     z: 0,
     ...initialPosition,
   });
+  const entity = useEntityState();
+  entity.components.position = state;
   return state;
 }
 
-export interface ISprite {
-  src?: string;
-}
-type TSpriteComponent = TComponent<"Sprite", ISprite>;
-export function useSprite(
-  intialValue?: ISprite
-): TComponentState<TSpriteComponent> {
-  const state = useState<TSpriteComponent>({
-    name: "Sprite",
-    src: "",
-    ...intialValue,
-  });
-  return state;
-}
-
-// SYSTEM
-
+// SYSTEMS
 const SPEED = 5;
-const entities = new Map<
-  string,
-  {
-    body: TComponentState<TBodyComponent>;
-    position: TComponentState<TPositionComponent>;
-  }
->();
-export function useMovement(
-  id: string,
-  positionState: TComponentState<TPositionComponent>,
-  bodyState: TComponentState<TBodyComponent>
-) {
-  // save entity to movement system map
-  let state = entities.get(id);
-  if (!state) {
-    state = { body: bodyState, position: positionState };
-    entities.set(id, state);
-  }
 
-  // function used to ask system to move
-  const move = useCallback(
-    (direction: "up" | "right" | "down" | "left") => {
-      const [currentPosition] = positionState;
-      let nextPosition = { x: 0, y: 0, z: 0, ...currentPosition };
-      if (direction === "up") nextPosition.y = nextPosition.y - 1 * SPEED;
-      if (direction === "right") nextPosition.x = nextPosition.x + 1 * SPEED;
-      if (direction === "down") nextPosition.y = nextPosition.y + 1 * SPEED;
-      if (direction === "left") nextPosition.x = nextPosition.x - 1 * SPEED;
+type TDirection = "up" | "down" | "left" | "right";
+export function useMovementSystem() {
+  const entity = useEntityState();
+  const entities = useGameState((game) => game.entities);
 
-      let entityInPosition;
-      for (const [eId, e] of entities.entries()) {
-        if (eId === id) {
-          continue;
-        }
-        const [ePosition] = e.position;
-        const [eBody] = e.body;
-        if (!ePosition || !eBody) {
-          continue;
-        }
-        const xMin = ePosition.x! - eBody.width! / 2;
-        const xMax = ePosition.x! + eBody.width! / 2;
-        const yMin = ePosition.y! - eBody.height! / 2;
-        const yMax = ePosition.y! + eBody.height! / 2;
-        const inRange =
-          nextPosition.x >= xMin &&
-          nextPosition.x <= xMax &&
-          nextPosition.y >= yMin &&
-          nextPosition.y <= yMax;
-        entityInPosition = inRange ? e : undefined;
-      }
-
-      // nothing is there
-      if (!entityInPosition) {
-        positionState[1](nextPosition);
-        return true;
-      }
-
-      // entity there is not solid
-      if (entityInPosition && !entityInPosition.body[0].solid) {
-        positionState[1](nextPosition);
-        return true;
-      }
-
-      // nope
+  const move = useCallback((direction: TDirection) => {
+    if (!entity?.components?.position) {
       return false;
-    },
-    [positionState, bodyState]
-  );
+    }
+
+    const [position, setPosition] = entity?.components?.position;
+
+    let nextPosition = { x: 0, y: 0, z: 0, ...position };
+    if (direction === "up") nextPosition.y = nextPosition.y - 1 * SPEED;
+    if (direction === "right") nextPosition.x = nextPosition.x + 1 * SPEED;
+    if (direction === "down") nextPosition.y = nextPosition.y + 1 * SPEED;
+    if (direction === "left") nextPosition.x = nextPosition.x - 1 * SPEED;
+
+    const e2 = Array.from(entities).find((e) => {
+      if (e === entity) {
+        return false;
+      }
+      if (!e?.components?.position || !e?.components?.body) {
+        return false;
+      }
+      const [ePosition] = e?.components?.position;
+      const [eBody] = e?.components?.body;
+      const xMin = ePosition.x! - eBody.width! / 2;
+      const xMax = ePosition.x! + eBody.width! / 2;
+      const yMin = ePosition.y! - eBody.height! / 2;
+      const yMax = ePosition.y! + eBody.height! / 2;
+      const inRange =
+        nextPosition.x >= xMin &&
+        nextPosition.x <= xMax &&
+        nextPosition.y >= yMin &&
+        nextPosition.y <= yMax;
+      return inRange;
+    });
+    console.log("move", entity, e2, entities);
+
+    // nothing is there
+    if (!e2) {
+      setPosition(nextPosition);
+      return true;
+    }
+
+    // entity there is not solid
+    if (e2 && !e2?.components?.body?.[0]?.solid) {
+      setPosition(nextPosition);
+      return true;
+    }
+
+    // nope
+    return false;
+  }, []);
 
   return move;
 }

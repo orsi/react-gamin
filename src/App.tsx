@@ -1,15 +1,13 @@
 import Game from "./library/Game";
-import Character2 from "./components/Character2";
-import Character4 from "./components/Character4";
-import { Objects } from "./components/Objects";
+import Character from "./components/Character";
+import Objects from "./components/Box";
 
 function App() {
   return (
     <div className="App">
       <Game>
         <Objects />
-        <Character2 />
-        <Character4 />
+        <Character />
       </Game>
     </div>
   );
