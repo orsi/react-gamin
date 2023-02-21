@@ -108,6 +108,8 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
   }, []);
 
   const onKeyDown = useCallback((e: KeyboardEvent) => {
+    e.preventDefault();
+
     if (e.code === "ArrowUp" && !get().KEYBOARD_UP) {
       set({ KEYBOARD_UP: true });
     }
@@ -126,6 +128,8 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
   }, []);
 
   const onKeyUp = useCallback((e: KeyboardEvent) => {
+    e.preventDefault();
+
     if (e.code === "ArrowUp" && get().KEYBOARD_UP) {
       set({ KEYBOARD_UP: false });
     }
@@ -183,6 +187,15 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
     }
   }
 
+  const onWindowFocus = useCallback((e: Event) => {
+    startPollingInput();
+  }, []);
+
+  const onWindowBlur = useCallback((e: Event) => {
+    stopPollingInput();
+    set(initialState);
+  }, []);
+
   useEffect(() => {
     // keyboard
     window.addEventListener("keydown", onKeyDown);
@@ -201,6 +214,10 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
     window.addEventListener("gamepadconnected", onGamepadConnected);
     window.addEventListener("gamepaddisconnected", onGamepadDisonnected);
 
+    // window focus
+    window.addEventListener("focus", onWindowFocus);
+    window.addEventListener("blur", onWindowBlur);
+
     startPollingInput();
     return () => {
       window.removeEventListener("keydown", onKeyDown);
@@ -209,6 +226,8 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("gamepadconnected", onGamepadConnected);
       window.removeEventListener("gamepaddisconnected", onGamepadDisonnected);
+      window.removeEventListener("focus", onWindowFocus);
+      window.removeEventListener("blur", onWindowBlur);
       stopPollingInput();
     };
   }, []);
