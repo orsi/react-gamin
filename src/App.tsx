@@ -1,10 +1,10 @@
 import Game from "./library/Game";
-import Character from "./components/Character";
-import Box from "./components/Box";
+import Character from "./entities/Character";
+import Box from "./entities/Box";
 
 function App() {
   const boxes = [];
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 500; i++) {
     const x = Math.floor(Math.random() * 640);
     const y = Math.floor(Math.random() * 640);
     const z = Math.floor(Math.random() * 640);

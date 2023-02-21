@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Render,
-  useBody,
-  useMovementSystem,
-  usePosition,
-  createEntity as createEntity,
-} from "../library/Game";
+import { useBody, usePosition, createEntity } from "../library/Game";
 import tile000Image from "../assets/npc/tile000.png";
 import tile001Image from "../assets/npc/tile001.png";
 import tile002Image from "../assets/npc/tile002.png";
@@ -23,19 +17,21 @@ import tile013Image from "../assets/npc/tile013.png";
 import tile014Image from "../assets/npc/tile014.png";
 import tile015Image from "../assets/npc/tile015.png";
 import { useGameInput } from "../library/Input";
-import useLogicLoop from "./useLogicLoop";
+import useLoop from "../library/useLogicLoop";
 import {
   Animation,
   Sprite,
   SpriteAnimationStateMachine,
   SpriteAnimationState,
-} from "../library/Sprite";
+  Render,
+} from "../library/Render";
+import { useMovement } from "../library/System";
 
 export default createEntity(function Character() {
   const [state, setState] = useState("idle");
   const position = usePosition({ x: 200, y: 200 });
   const body = useBody({ solid: true });
-  const move = useMovementSystem();
+  const move = useMovement();
 
   const input = useGameInput();
   useEffect(() => {
@@ -52,7 +48,7 @@ export default createEntity(function Character() {
     }
   }, [input]);
 
-  useLogicLoop(() => {
+  useLoop(() => {
     if (state === "walk-up") {
       move("up");
     } else if (state === "walk-down") {

@@ -56,19 +56,6 @@ const GameInputStoreContext = createContext<{
   subscribe: (callback: () => void) => () => void;
 } | null>(null);
 
-export function useGameInput<T>(selector: (store: IGameInputStore) => T): T;
-export function useGameInput<T>(): IGameInputStore;
-export function useGameInput<T>(selector?: (store: IGameInputStore) => T) {
-  const storeContext = useContext(GameInputStoreContext);
-  if (!storeContext) {
-    throw Error("No input context.");
-  }
-  const state = useSyncExternalStore(storeContext.subscribe, () =>
-    selector ? selector(storeContext.get()) : storeContext.get()
-  );
-  return state;
-}
-
 interface GameInputProps {}
 export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
   // setup store
@@ -242,4 +229,17 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
       {children}
     </GameInputStoreContext.Provider>
   );
+}
+
+export function useGameInput<T>(selector: (store: IGameInputStore) => T): T;
+export function useGameInput<T>(): IGameInputStore;
+export function useGameInput<T>(selector?: (store: IGameInputStore) => T) {
+  const storeContext = useContext(GameInputStoreContext);
+  if (!storeContext) {
+    throw Error("No input context.");
+  }
+  const state = useSyncExternalStore(storeContext.subscribe, () =>
+    selector ? selector(storeContext.get()) : storeContext.get()
+  );
+  return state;
 }

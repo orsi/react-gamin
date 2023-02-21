@@ -1,12 +1,8 @@
-import { Fragment, ReactNode } from "react";
+import { Fragment } from "react";
 import overworldImage from "../assets/Overworld.png";
-import useSpriteSheet from "../library/Sprite";
-import {
-  createEntity,
-  useBody,
-  useMovementSystem,
-  usePosition,
-} from "../library/Game";
+import { useSpriteSheet } from "../library/Render";
+import { createEntity, useBody, usePosition } from "../library/Game";
+import { useMovement } from "../library/System";
 
 type BoxProps = {
   x?: number;
@@ -30,7 +26,7 @@ export default createEntity(function Box({ x, y, z, solid }: BoxProps) {
     z: z ?? 0,
   });
 
-  useMovementSystem();
+  useMovement();
 
   return (
     <div

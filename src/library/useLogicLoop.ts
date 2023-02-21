@@ -3,7 +3,14 @@ import { useEffect, useRef } from "react";
 const FPS = 60;
 const FRAME_MS = 1000 / FPS;
 
-export default function useLogicLoop(
+/**
+ * This hook will run the callback given to it continously
+ * via a requestAnimationFrame loop.
+ *
+ * @param callback Code to run in a continuous loop
+ * @param deps State dependencies
+ */
+export default function useLoop(
   callback: () => void,
   deps?: React.DependencyList,
 ) {
