@@ -1,5 +1,6 @@
 import {
   Children,
+  forwardRef,
   PropsWithChildren,
   ReactElement,
   ReactNode,
@@ -8,25 +9,28 @@ import {
   useRef,
   useState,
 } from "react";
-import { IPosition } from "./Game";
+import { IPosition } from "./Entity";
 
 interface RenderProps extends PropsWithChildren {
   position?: IPosition;
 }
-export function Render({ children, position }: RenderProps) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: "0",
-        left: "0",
-        transform: `translate(${position?.x}px, ${position?.y}px)`,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+export const Render = forwardRef<HTMLDivElement, RenderProps>(
+  ({ children, position }, ref) => {
+    return (
+      <div
+        ref={ref}
+        style={{
+          position: "absolute",
+          top: "0",
+          left: "0",
+          transform: `translate(${position?.x}px, ${position?.y}px)`,
+        }}
+      >
+        {children}
+      </div>
+    );
+  }
+);
 
 export function useSpriteSheet({
   src,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import tile000Image from "../assets/npc/tile000.png";
 import tile001Image from "../assets/npc/tile001.png";
 import tile002Image from "../assets/npc/tile002.png";
@@ -24,16 +24,31 @@ import {
   SpriteAnimationState,
   Render,
 } from "../library/Render";
-import { useInteract, useMovement, useStuff } from "../library/System";
-import { createEntity, usePosition, useBody } from "../library/Entity";
+import { useInteractSystem, useMovementSystem } from "../library/System";
+import {
+  usePosition,
+  useBody,
+  useEntity,
+  usePositionComponent,
+  useBodyComponent,
+} from "../library/Entity";
 
-export default createEntity(function Character() {
+export default function MiloChar() {
+  const ref = useRef(null);
+  const entity = useEntity(ref);
+
+  // const spriteSheet = useSpriteSheet({
+  //   src: characterSpriteSheet,
+  //   cellHeight: 32,
+  //   cellWidth: 16,
+  //   width: 272,
+  //   height: 256,
+  // });
   const [state, setState] = useState("idle");
-  const position = usePosition({ x: 200, y: 200 });
-  const body = useBody({ solid: true });
-  const move = useMovement();
-  const interact = useInteract();
-  const stuff = useStuff();
+  const position = usePositionComponent(entity, { x: 200, y: 200 });
+  const body = useBodyComponent(entity, { solid: true });
+  const move = useMovementSystem(entity);
+  const interact = useInteractSystem(entity);
 
   const input = useGameInput();
   useEffect(() => {
@@ -51,7 +66,6 @@ export default createEntity(function Character() {
 
     if (input.KEYBOARD_SPACE) {
       interact(position[0]);
-      stuff();
     }
   }, [input]);
 
@@ -70,7 +84,7 @@ export default createEntity(function Character() {
   }, [state]);
 
   return (
-    <Render position={position[0]}>
+    <Render ref={ref} position={position[0]}>
       <SpriteAnimationStateMachine state={state}>
         <SpriteAnimationState id={`idle`}>
           <Sprite src={tile000Image} />
@@ -98,4 +112,4 @@ export default createEntity(function Character() {
       </SpriteAnimationStateMachine>
     </Render>
   );
-});
+}

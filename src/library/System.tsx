@@ -1,21 +1,32 @@
-import { useCallback, useEffect, useRef } from "react";
-import { useEntityState, TEntity, IPosition } from "./Entity";
+import {
+  createContext,
+  PropsWithChildren,
+  useCallback,
+  useEffect,
+} from "react";
+import { TEntity, IPosition } from "./Entity";
 import { useGameState } from "./Game";
+
+export default function System({ children }: PropsWithChildren) {
+  const SystemContext = createContext(null);
+  return (
+    <SystemContext.Provider value={null}>{children}</SystemContext.Provider>
+  );
+}
 
 const SPEED = 5;
 
 type TDirection = "up" | "down" | "left" | "right";
-export function useMovement() {
-  const entity = useEntityState();
+export function useMovementSystem(entity: any) {
   const entities = useGameState((game) => game.entities);
 
   const move = useCallback(
     (direction: TDirection) => {
-      if (!entity?.components?.position) {
+      if (!entity?.position) {
         return false;
       }
 
-      const [position, setPosition] = entity?.components?.position;
+      const [position, setPosition] = entity?.position;
 
       let nextPosition = { x: 0, y: 0, z: 0, ...position };
       if (direction === "up") nextPosition.y = nextPosition.y - 1 * SPEED;
@@ -27,11 +38,11 @@ export function useMovement() {
         if (e === entity) {
           return false;
         }
-        if (!e?.components?.position || !e?.components?.body) {
+        if (!e?.position || !e?.body) {
           return false;
         }
-        const [ePosition] = e?.components?.position;
-        const [eBody] = e?.components?.body;
+        const [ePosition] = e?.position;
+        const [eBody] = e?.body;
         const xMin = ePosition.x! - eBody.width! / 2;
         const xMax = ePosition.x! + eBody.width! / 2;
         const yMin = ePosition.y! - eBody.height! / 2;
@@ -51,7 +62,7 @@ export function useMovement() {
       }
 
       // entity there is not solid
-      if (e2 && !e2?.components?.body?.[0]?.solid) {
+      if (e2 && !e2?.body?.[0]?.solid) {
         setPosition(nextPosition);
         return true;
       }
@@ -65,33 +76,32 @@ export function useMovement() {
   return move;
 }
 
-const interactEntities: Record<string, TEntity> = {};
-export function useInteract(callback?: (e: TEntity) => void) {
-  const entity = useEntityState();
-
+const interactEntities: Record<string, any> = {};
+export function useInteractSystem(
+  entity: any,
+  callback?: (e: TEntity) => void
+) {
   useEffect(() => {
-    entity.components.onInteracted = callback ?? function () {};
+    entity.onInteracted = callback ?? function () {};
     interactEntities[entity.id] = entity;
     return () => {
-      delete entity.components.onInteracted;
+      delete entity.onInteracted;
       delete interactEntities[entity.id];
     };
   }, []);
 
   return (position: Required<IPosition>) => {
-    console.log("interact!");
-
     const iEntity = Object.values(interactEntities).find((e) => {
       if (e === entity) {
         return;
       }
 
-      if (!e?.components?.position || !e?.components?.body) {
+      if (!e?.position || !e?.body) {
         return false;
       }
 
-      const [ePosition] = e?.components?.position;
-      const [eBody] = e?.components?.body;
+      const [ePosition] = e?.position;
+      const [eBody] = e?.body;
       const xMin = ePosition.x! - eBody.width! / 2;
       const xMax = ePosition.x! + eBody.width! / 2;
       const yMin = ePosition.y! - eBody.height! / 2;
@@ -106,25 +116,9 @@ export function useInteract(callback?: (e: TEntity) => void) {
 
     // nothing is there
     if (!iEntity) {
-      console.log("nothin");
       return;
     }
 
-    console.log("interacted", iEntity);
-    iEntity.components.onInteracted(entity);
+    iEntity.onInteracted(entity);
   };
-}
-
-const stuffEntities: Set<TEntity> = new Set();
-export function useStuff() {
-  const entity = useEntityState();
-
-  useEffect(() => {
-    stuffEntities.add(entity);
-    return () => {
-      stuffEntities.delete(entity);
-    };
-  }, []);
-
-  return () => {};
 }

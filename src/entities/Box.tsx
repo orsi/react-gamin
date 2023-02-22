@@ -1,8 +1,22 @@
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import overworldImage from "../assets/Overworld.png";
-import { createEntity, useBody, usePosition, TEntity } from "../library/Entity";
+import {
+  createEntity,
+  useBody,
+  usePosition,
+  TEntity,
+  useEntity,
+  useBodyComponent,
+  usePositionComponent,
+} from "../library/Entity";
 import { useSpriteSheet } from "../library/Render";
-import { useInteract, useMovement, useStuff } from "../library/System";
+import {
+  useInteract,
+  useInteractSystem,
+  useMovement,
+  useMovementSystem,
+  useStuff,
+} from "../library/System";
 
 type BoxProps = {
   x?: number;
@@ -11,6 +25,8 @@ type BoxProps = {
   solid?: boolean;
 };
 export default createEntity(function Box({ x, y, z, solid }: BoxProps) {
+  const ref = useRef(null);
+  const entity = useEntity(ref);
   const mapSprites = useSpriteSheet({
     cellWidth: 16,
     cellHeight: 16,
@@ -18,8 +34,12 @@ export default createEntity(function Box({ x, y, z, solid }: BoxProps) {
     height: 576,
     src: overworldImage,
   });
-  const body = useBody({ solid: solid ?? true, width: 16, height: 32 });
-  const position = usePosition({
+  const body = useBodyComponent(entity, {
+    solid: solid ?? true,
+    width: 16,
+    height: 32,
+  });
+  const position = usePositionComponent(entity, {
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,
@@ -27,14 +47,15 @@ export default createEntity(function Box({ x, y, z, solid }: BoxProps) {
 
   const [element, setElement] = useState(mapSprites[30]);
 
-  useMovement();
-  useInteract((e: TEntity) => {
+  useMovementSystem(entity);
+  useInteractSystem(entity, (e: TEntity) => {
     console.log("who's interacting me?", e);
     setElement(mapSprites[Math.floor(Math.random() * mapSprites.length)]);
   });
 
   return (
     <div
+      ref={ref}
       style={{
         display: "flex",
         flexDirection: "column",

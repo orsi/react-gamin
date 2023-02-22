@@ -5,9 +5,11 @@ import {
   useContext,
   useSyncExternalStore,
   useState,
+  PropsWithChildren,
 } from "react";
 import { Store, createStore } from "./createStore";
 import { useGameState } from "./Game";
+import { StageContext } from "./Stage";
 
 export type TEntity = {
   id: string;
@@ -38,6 +40,29 @@ export const createEntity =
       </EntityContext.Provider>
     );
   };
+
+export function useEntity(ref: any) {
+  const [state, setState] = useState({
+    id: useId(),
+    ref,
+  });
+  return state;
+}
+export function Entity({ children }: PropsWithChildren) {
+  const stage = useContext(StageContext);
+  const [state, setState] = useState({});
+
+  useEffect(() => {
+    // stage.add(state);
+    () => {
+      // stage.delete(state);
+    };
+  }, []);
+
+  return (
+    <EntityContext.Provider value={state}>{children}</EntityContext.Provider>
+  );
+}
 
 export function useEntityStore() {
   const store = useContext(EntityContext);
@@ -72,7 +97,6 @@ export interface IBody {
   height?: number;
   width?: number;
 }
-type TBodyComponent = TComponent<"Body", IBody>;
 export function useBody(initialBody?: IBody) {
   const state = useState<IBody>({
     solid: true,
@@ -84,14 +108,23 @@ export function useBody(initialBody?: IBody) {
   entity.components.body = state;
   return state;
 }
+export function useBodyComponent(entity: any, initialBody?: IBody) {
+  const state = useState<IBody>({
+    solid: true,
+    width: 10,
+    height: 10,
+    ...initialBody,
+  });
+  entity.body = state;
+  return state;
+}
 
 export interface IPosition {
-  x?: number;
-  y?: number;
-  z?: number;
+  x: number;
+  y: number;
+  z: number;
 }
-type TPositionComponent = TComponent<"Position", IPosition>;
-export function usePosition(initialPosition?: IPosition) {
+export function usePosition(initialPosition?: Partial<IPosition>) {
   const state = useState<IPosition>({
     x: 0,
     y: 0,
@@ -100,5 +133,19 @@ export function usePosition(initialPosition?: IPosition) {
   });
   const entity = useEntityState();
   entity.components.position = state;
+  return state;
+}
+
+export function usePositionComponent(
+  entity: any,
+  initialPosition?: Partial<IPosition>
+) {
+  const state = useState<IPosition>({
+    x: 0,
+    y: 0,
+    z: 0,
+    ...initialPosition,
+  });
+  entity.position = state;
   return state;
 }

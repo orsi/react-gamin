@@ -1,23 +1,10 @@
-import Game from "./library/Game";
-import Character from "./entities/Character";
-import Box from "./entities/Box";
+import { PropsWithChildren } from "react";
+import MyGame from "./entities/MyGame";
 
-function App() {
-  const boxes = [];
-  for (let i = 0; i < 50; i++) {
-    const x = Math.floor(Math.random() * 640);
-    const y = Math.floor(Math.random() * 640);
-    const z = Math.floor(Math.random() * 640);
-    boxes.push(<Box key={i} x={x} y={y} z={z} solid={false} />);
-  }
+export default function App({ children }: PropsWithChildren) {
   return (
-    <div className="App">
-      <Game>
-        {boxes}
-        <Character />
-      </Game>
+    <div id="app">
+      <MyGame />
     </div>
   );
 }
-
-export default App;
