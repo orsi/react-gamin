@@ -1,11 +1,6 @@
-import {
-  createContext,
-  PropsWithChildren,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
-import { IPosition, TEntity, useEntityState, useGameState } from "./Game";
+import { useCallback, useEffect, useRef } from "react";
+import { useEntityState, TEntity, IPosition } from "./Entity";
+import { useGameState } from "./Game";
 
 const SPEED = 5;
 

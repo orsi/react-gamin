@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import overworldImage from "../assets/Overworld.png";
+import { createEntity, useBody, usePosition, TEntity } from "../library/Entity";
 import { useSpriteSheet } from "../library/Render";
-import { createEntity, TEntity, useBody, usePosition } from "../library/Game";
 import { useInteract, useMovement, useStuff } from "../library/System";
 
 type BoxProps = {

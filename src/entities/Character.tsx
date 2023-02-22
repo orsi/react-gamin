@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useBody, usePosition, createEntity } from "../library/Game";
 import tile000Image from "../assets/npc/tile000.png";
 import tile001Image from "../assets/npc/tile001.png";
 import tile002Image from "../assets/npc/tile002.png";
@@ -26,6 +25,7 @@ import {
   Render,
 } from "../library/Render";
 import { useInteract, useMovement, useStuff } from "../library/System";
+import { createEntity, usePosition, useBody } from "../library/Entity";
 
 export default createEntity(function Character() {
   const [state, setState] = useState("idle");
