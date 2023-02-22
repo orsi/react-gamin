@@ -83,7 +83,7 @@ export function useGameState<O>(selector?: (game: TGameState) => O) {
   return state;
 }
 
-type TEntity = {
+export type TEntity = {
   id: string;
   components: { [key: string]: any };
 };

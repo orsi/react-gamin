@@ -25,13 +25,15 @@ import {
   SpriteAnimationState,
   Render,
 } from "../library/Render";
-import { useMovement } from "../library/System";
+import { useInteract, useMovement, useStuff } from "../library/System";
 
 export default createEntity(function Character() {
   const [state, setState] = useState("idle");
   const position = usePosition({ x: 200, y: 200 });
   const body = useBody({ solid: true });
   const move = useMovement();
+  const interact = useInteract();
+  const stuff = useStuff();
 
   const input = useGameInput();
   useEffect(() => {
@@ -45,6 +47,11 @@ export default createEntity(function Character() {
       setState("walk-right");
     } else {
       setState("idle");
+    }
+
+    if (input.KEYBOARD_SPACE) {
+      interact(position[0]);
+      stuff();
     }
   }, [input]);
 

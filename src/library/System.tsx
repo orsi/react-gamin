@@ -1,5 +1,11 @@
-import { useCallback } from "react";
-import { useEntityState, useGameState } from "./Game";
+import {
+  createContext,
+  PropsWithChildren,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
+import { IPosition, TEntity, useEntityState, useGameState } from "./Game";
 
 const SPEED = 5;
 
@@ -62,4 +68,68 @@ export function useMovement() {
   );
 
   return move;
+}
+
+const interactEntities: Record<string, TEntity> = {};
+export function useInteract(callback?: (e: TEntity) => void) {
+  const entity = useEntityState();
+
+  useEffect(() => {
+    entity.components.onInteracted = callback ?? function () {};
+    interactEntities[entity.id] = entity;
+    return () => {
+      delete entity.components.onInteracted;
+      delete interactEntities[entity.id];
+    };
+  }, []);
+
+  return (position: Required<IPosition>) => {
+    console.log("interact!");
+
+    const iEntity = Object.values(interactEntities).find((e) => {
+      if (e === entity) {
+        return;
+      }
+
+      if (!e?.components?.position || !e?.components?.body) {
+        return false;
+      }
+
+      const [ePosition] = e?.components?.position;
+      const [eBody] = e?.components?.body;
+      const xMin = ePosition.x! - eBody.width! / 2;
+      const xMax = ePosition.x! + eBody.width! / 2;
+      const yMin = ePosition.y! - eBody.height! / 2;
+      const yMax = ePosition.y! + eBody.height! / 2;
+      const inRange =
+        position.x >= xMin &&
+        position.x <= xMax &&
+        position.y >= yMin &&
+        position.y <= yMax;
+      return inRange;
+    });
+
+    // nothing is there
+    if (!iEntity) {
+      console.log("nothin");
+      return;
+    }
+
+    console.log("interacted", iEntity);
+    iEntity.components.onInteracted(entity);
+  };
+}
+
+const stuffEntities: Set<TEntity> = new Set();
+export function useStuff() {
+  const entity = useEntityState();
+
+  useEffect(() => {
+    stuffEntities.add(entity);
+    return () => {
+      stuffEntities.delete(entity);
+    };
+  }, []);
+
+  return () => {};
 }
