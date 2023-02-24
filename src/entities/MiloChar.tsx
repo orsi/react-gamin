@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import tile000Image from "../assets/npc/tile000.png";
 import tile001Image from "../assets/npc/tile001.png";
 import tile002Image from "../assets/npc/tile002.png";
@@ -25,18 +25,9 @@ import {
   Render,
 } from "../library/Render";
 import { useInteractSystem, useMovementSystem } from "../library/System";
-import {
-  usePosition,
-  useBody,
-  useEntity,
-  usePositionComponent,
-  useBodyComponent,
-} from "../library/Entity";
+import { usePositionComponent, useBodyComponent } from "../library/Entity";
 
 export default function MiloChar() {
-  const ref = useRef(null);
-  const entity = useEntity(ref);
-
   // const spriteSheet = useSpriteSheet({
   //   src: characterSpriteSheet,
   //   cellHeight: 32,
@@ -45,10 +36,10 @@ export default function MiloChar() {
   //   height: 256,
   // });
   const [state, setState] = useState("idle");
-  const position = usePositionComponent(entity, { x: 200, y: 200 });
-  const body = useBodyComponent(entity, { solid: true });
-  const move = useMovementSystem(entity);
-  const interact = useInteractSystem(entity);
+  const position = usePositionComponent({ x: 200, y: 200 });
+  const body = useBodyComponent({ width: 16, height: 16, solid: true });
+  const move = useMovementSystem();
+  const interact = useInteractSystem();
 
   const input = useGameInput();
   useEffect(() => {
@@ -84,7 +75,7 @@ export default function MiloChar() {
   }, [state]);
 
   return (
-    <Render ref={ref} position={position[0]}>
+    <Render position={position[0]}>
       <SpriteAnimationStateMachine state={state}>
         <SpriteAnimationState id={`idle`}>
           <Sprite src={tile000Image} />

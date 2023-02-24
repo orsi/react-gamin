@@ -2,17 +2,18 @@ import {
   useState,
   useEffect,
   PropsWithChildren,
-  useRef,
   createContext,
   useContext,
   Dispatch,
   SetStateAction,
   useSyncExternalStore,
   forwardRef,
+  ReactNode,
 } from "react";
 import { createStore, Store } from "./createStore";
 import { TEntity } from "./Entity";
 import { GameInput } from "./Input";
+import Stage from "./Stage";
 
 export type ReactState<S> = [S, Dispatch<SetStateAction<S>>];
 
@@ -20,47 +21,67 @@ export type TGameStore = {
   entities: Set<TEntity>;
 };
 export const GameContext = createContext<Store<TGameStore> | null>(null);
-interface GameProps {}
-export default forwardRef<HTMLDivElement, PropsWithChildren<GameProps>>(
-  function Game({ children }, ref) {
-    const gameStore = createStore<TGameStore>({
-      entities: new Set<TEntity>(),
-    });
+interface GameProps {
+  stages: ReactNode[];
+  systems: (({ children }: PropsWithChildren) => JSX.Element)[];
+}
+export default forwardRef<HTMLDivElement, GameProps>(function Game(
+  { stages, systems },
+  ref
+) {
+  const gameStore = createStore<TGameStore>({
+    entities: new Set<TEntity>(),
+  });
+  const [width, setWidth] = useState<number>();
+  const [height, setHeight] = useState<number>();
 
-    const [width, setWidth] = useState(640);
-    const [height, setHeight] = useState(480);
+  const [currentStage, setCurrentStage] = useState(stages[0]);
 
-    function onWindowResize() {
-      const bounds = document.body.getBoundingClientRect();
-      setHeight(bounds.height);
-      setWidth(bounds.width);
-    }
+  const Systems = systems.reduce(
+    (AccSystems, System) =>
+      ({ children }: PropsWithChildren) =>
+        (
+          <AccSystems>
+            <System children={children} />
+          </AccSystems>
+        ),
+    ({ children }: PropsWithChildren) => <>{children}</>
+  );
 
-    useEffect(() => {
-      window.addEventListener("resize", onWindowResize);
-      onWindowResize();
-
-      return () => {
-        window.removeEventListener("resize", onWindowResize);
-      };
-    }, []);
-
-    return (
-      <div
-        ref={ref}
-        style={{
-          position: "relative",
-          height,
-          width,
-        }}
-      >
-        <GameContext.Provider value={gameStore}>
-          <GameInput>{children}</GameInput>
-        </GameContext.Provider>
-      </div>
-    );
+  function onWindowResize() {
+    const bounds = document.body.getBoundingClientRect();
+    setHeight(bounds.height);
+    setWidth(bounds.width);
   }
-);
+
+  useEffect(() => {
+    window.addEventListener("resize", onWindowResize);
+    onWindowResize();
+
+    return () => {
+      window.removeEventListener("resize", onWindowResize);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: "relative",
+        height: height ?? `100vh`,
+        width: width ?? `100vw`,
+      }}
+    >
+      <GameContext.Provider value={gameStore}>
+        <GameInput>
+          <Systems>
+            <Stage>{currentStage}</Stage>
+          </Systems>
+        </GameInput>
+      </GameContext.Provider>
+    </div>
+  );
+});
 
 export function useGameStore<O>() {
   const store = useContext(GameContext);

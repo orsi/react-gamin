@@ -32,44 +32,108 @@ export const Render = forwardRef<HTMLDivElement, RenderProps>(
   }
 );
 
-export function useSpriteSheet({
+type Sprite = {
+  height: number;
+  id: string;
+  offsetX: number;
+  offsetY: number;
+  width: number;
+};
+type SpriteSheet = {
+  src: string;
+  height: number;
+  width: number;
+  spriteHeight: number;
+  spriteWidth: number;
+  sprites: Record<string, Sprite>;
+};
+export function createSpriteSheet({
+  id,
   src,
   width,
   height,
-  cellWidth,
-  cellHeight,
+  spriteWidth,
+  spriteHeight,
 }: {
+  id?: string;
   src: string;
   width: number;
   height: number;
-  cellWidth: number;
-  cellHeight: number;
+  spriteWidth: number;
+  spriteHeight: number;
 }) {
-  const tilesPerColumn = width / cellWidth;
-  const tilesPerRow = height / cellHeight;
+  const columns = width / spriteWidth;
+  const rows = height / spriteHeight;
 
-  const sprites: ReactNode[] = [];
-  for (let i = 0; i < tilesPerColumn * tilesPerRow; i++) {
-    const x = Math.floor(i % tilesPerColumn);
-    const y = Math.floor(i / tilesPerColumn);
-    const objectPositionX = -(x * cellWidth);
-    const objectPositionY = -(y * cellHeight);
-    const objectPosition = `${objectPositionX}px ${objectPositionY}px`;
+  const sprites: Sprite[] = [];
+  for (let i = 0; i < columns * rows; i++) {
+    const x = Math.floor(i % columns);
+    const y = Math.floor(i / columns);
+    const offsetX = -(x * spriteWidth);
+    const offsetY = -(y * spriteHeight);
 
-    sprites[i] = (
-      <img
-        style={{
-          objectFit: "none",
-          objectPosition,
-          width: `${cellWidth}px`,
-          height: `${cellHeight}px`,
-        }}
-        src={src}
-        alt=""
-      />
-    );
+    sprites[i] = {
+      id: `${id ?? "sprite"}-${i}`,
+      height: spriteHeight,
+      width: spriteWidth,
+      offsetX,
+      offsetY,
+    };
   }
-  return sprites;
+  return { src, height, width, spriteHeight, spriteWidth, sprites };
+}
+
+interface MultiSpriteSheetProps {
+  src: string;
+  sprites: Sprite[];
+  tilesPerRow?: number;
+}
+export function MultiSpriteSheet({
+  tilesPerRow,
+  src,
+  sprites,
+}: MultiSpriteSheetProps) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${tilesPerRow ?? "auto"}, 1fr)`,
+      }}
+    >
+      {sprites.map((sprite, i) => (
+        <img
+          key={`${sprite.id}-${i}`}
+          style={{
+            objectFit: "none",
+            objectPosition: `${sprite.offsetX}px ${sprite.offsetY}px`,
+            height: `${sprite.height}px`,
+            width: `${sprite.width}px`,
+          }}
+          src={src}
+          alt=""
+        />
+      ))}
+    </div>
+  );
+}
+
+interface SpriteSheetProps {
+  src: string;
+  sprite: Sprite;
+}
+export function SpriteSheet({ src, sprite }: SpriteSheetProps) {
+  return (
+    <img
+      style={{
+        objectFit: "none",
+        objectPosition: `${sprite.offsetX}px ${sprite.offsetY}px`,
+        height: `${sprite.height}px`,
+        width: `${sprite.width}px`,
+      }}
+      src={src}
+      alt=""
+    />
+  );
 }
 
 interface SpriteProps {

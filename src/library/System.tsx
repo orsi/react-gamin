@@ -1,24 +1,65 @@
 import {
   createContext,
   PropsWithChildren,
+  ReactNode,
   useCallback,
+  useContext,
   useEffect,
+  useId,
+  useRef,
 } from "react";
-import { TEntity, IPosition } from "./Entity";
-import { useGameState } from "./Game";
+import { TEntity, IPosition, EntityContext } from "./Entity";
 
-export default function System({ children }: PropsWithChildren) {
-  const SystemContext = createContext(null);
+type System = {};
+export const SystemContext = createContext<System>({
+  id: "default",
+});
+type SystemProps = {
+  key: React.Key;
+  children?: ReactNode;
+};
+export default function System({ children }: SystemProps) {
+  const System = useRef({
+    id: useId(),
+  });
   return (
-    <SystemContext.Provider value={null}>{children}</SystemContext.Provider>
+    <SystemContext.Provider value={System}>{children}</SystemContext.Provider>
   );
 }
 
+const MovementSystemContext = createContext<any>(null);
+export function MovementSystem({ children }: PropsWithChildren) {
+  const entities = useRef(new Set());
+  return (
+    <MovementSystemContext.Provider
+      value={{
+        get: () => [...entities.current],
+        add: (entity: TEntity) => entities.current.add(entity),
+        remove: (entity: TEntity) => entities.current.delete(entity),
+      }}
+    >
+      {children}
+    </MovementSystemContext.Provider>
+  );
+}
 const SPEED = 5;
-
 type TDirection = "up" | "down" | "left" | "right";
-export function useMovementSystem(entity: any) {
-  const entities = useGameState((game) => game.entities);
+export function useMovementSystem() {
+  const { current: entity } = useContext(EntityContext);
+  const context = useContext(MovementSystemContext);
+  if (!context) {
+    throw Error("System context not found. Did you create the system?");
+  }
+  const { get, add, remove } = context;
+  const entities = get();
+
+  useEffect(() => {
+    add(entity);
+    console.log("move entities", get());
+    () => {
+      remove(entity);
+    };
+  }, []);
 
   const move = useCallback(
     (direction: TDirection) => {
@@ -43,10 +84,11 @@ export function useMovementSystem(entity: any) {
         }
         const [ePosition] = e?.position;
         const [eBody] = e?.body;
-        const xMin = ePosition.x! - eBody.width! / 2;
-        const xMax = ePosition.x! + eBody.width! / 2;
-        const yMin = ePosition.y! - eBody.height! / 2;
-        const yMax = ePosition.y! + eBody.height! / 2;
+
+        const xMin = ePosition.x;
+        const xMax = ePosition.x + eBody.width!;
+        const yMin = ePosition.y;
+        const yMax = ePosition.y + eBody.height!;
         const inRange =
           nextPosition.x >= xMin &&
           nextPosition.x <= xMax &&
@@ -76,22 +118,44 @@ export function useMovementSystem(entity: any) {
   return move;
 }
 
-const interactEntities: Record<string, any> = {};
-export function useInteractSystem(
-  entity: any,
-  callback?: (e: TEntity) => void
-) {
+const InteractSystemContext = createContext<any>(null);
+export function InteractSystem({ children }: PropsWithChildren) {
+  const entities = useRef(new Set());
+
+  return (
+    <InteractSystemContext.Provider
+      value={{
+        get: () => [...entities.current],
+        add: (entity: TEntity) => entities.current.add(entity),
+        remove: (entity: TEntity) => entities.current.delete(entity),
+      }}
+    >
+      {children}
+    </InteractSystemContext.Provider>
+  );
+}
+
+export function useInteractSystem(callback?: (e: TEntity) => void) {
+  const { current: entity } = useContext(EntityContext);
+  const context = useContext(InteractSystemContext);
+  if (!context) {
+    throw Error("System context not found. Did you create the system?");
+  }
+  const { get, add, remove } = context;
+  const entities = get();
+
   useEffect(() => {
     entity.onInteracted = callback ?? function () {};
-    interactEntities[entity.id] = entity;
-    return () => {
+    add(entity);
+    console.log("interact entities", get());
+    () => {
       delete entity.onInteracted;
-      delete interactEntities[entity.id];
+      remove(entity);
     };
   }, []);
 
   return (position: Required<IPosition>) => {
-    const iEntity = Object.values(interactEntities).find((e) => {
+    const iEntity = Object.values(entities).find((e) => {
       if (e === entity) {
         return;
       }

@@ -1,30 +1,23 @@
-import { createContext, PropsWithChildren, ReactNode, useState } from "react";
-import { TEntity } from "./Entity";
+import {
+  createContext,
+  ReactNode,
+  useId,
+  useRef,
+} from "react";
 
-type StageStore = {
-  entities: TEntity[];
+type Stage = {};
+export const StageContext = createContext<Stage>({
+  id: "default",
+});
+type StageProps = {
+  key?: React.Key;
+  children?: ReactNode;
 };
-type StageContext = {
-  add: (entity: TEntity) => void;
-  remove: () => void;
-};
-export const StageContext = createContext<null | StageContext>(null);
-export default function Stage({ children }: PropsWithChildren) {
-  const [state, setState] = useState({
-    entities: [],
+export default function Stage({ children }: StageProps) {
+  const stage = useRef({
+    id: useId(),
   });
-  const add = (entity: TEntity) => {
-    // setState(...state);
-  };
-  const remove = () => {};
   return (
-    <StageContext.Provider
-      value={{
-        add,
-        remove,
-      }}
-    >
-      {children}
-    </StageContext.Provider>
+    <StageContext.Provider value={stage}>{children}</StageContext.Provider>
   );
 }

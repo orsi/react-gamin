@@ -8,13 +8,13 @@ import {
 import { createSpriteSheet, MultiSpriteSheet, Render } from "../library/Render";
 import { useInteractSystem, useMovementSystem } from "../library/System";
 
-type BoxProps = {
+type BarrelProps = {
   x?: number;
   y?: number;
   z?: number;
   solid?: boolean;
 };
-export default function Box({ x, y, z, solid }: BoxProps) {
+export default function Barrel({ x, y, z, solid }: BarrelProps) {
   const spriteSheet = createSpriteSheet({
     spriteWidth: 16,
     spriteHeight: 16,
@@ -43,7 +43,7 @@ export default function Box({ x, y, z, solid }: BoxProps) {
       <MultiSpriteSheet
         tilesPerRow={1}
         src={spriteSheet.src}
-        sprites={[spriteSheet.sprites[30], spriteSheet.sprites[70]]}
+        sprites={[spriteSheet.sprites[33], spriteSheet.sprites[73]]}
       />
     </Render>
   );

@@ -1,5 +1,5 @@
-import overworldImage from "../assets/Overworld.png";
 import { useRef } from "react";
+import overworldImage from "../assets/Overworld.png";
 import {
   TEntity,
   useBodyComponent,
@@ -8,13 +8,13 @@ import {
 import { createSpriteSheet, MultiSpriteSheet, Render } from "../library/Render";
 import { useInteractSystem, useMovementSystem } from "../library/System";
 
-type BoxProps = {
+type FountainProps = {
   x?: number;
   y?: number;
   z?: number;
   solid?: boolean;
 };
-export default function Box({ x, y, z, solid }: BoxProps) {
+export default function Fountain({ x, y, z, solid }: FountainProps) {
   const spriteSheet = createSpriteSheet({
     spriteWidth: 16,
     spriteHeight: 16,
@@ -23,8 +23,8 @@ export default function Box({ x, y, z, solid }: BoxProps) {
     src: overworldImage,
   });
   const body = useBodyComponent({
-    height: 32,
-    width: 16,
+    height: 48,
+    width: 48,
     solid: solid ?? true,
   });
   const position = usePositionComponent({
@@ -41,9 +41,19 @@ export default function Box({ x, y, z, solid }: BoxProps) {
   return (
     <Render position={position[0]}>
       <MultiSpriteSheet
-        tilesPerRow={1}
+        tilesPerRow={3}
         src={spriteSheet.src}
-        sprites={[spriteSheet.sprites[30], spriteSheet.sprites[70]]}
+        sprites={[
+          spriteSheet.sprites[382],
+          spriteSheet.sprites[383],
+          spriteSheet.sprites[384],
+          spriteSheet.sprites[422],
+          spriteSheet.sprites[423],
+          spriteSheet.sprites[424],
+          spriteSheet.sprites[462],
+          spriteSheet.sprites[463],
+          spriteSheet.sprites[464],
+        ]}
       />
     </Render>
   );
