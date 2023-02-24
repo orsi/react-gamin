@@ -28,7 +28,7 @@ import {
 } from "react";
 
 const INPUT_TICK_MS = 1000 / 60;
-interface IGameInputStore {
+type GameInput = {
   KEYBOARD_UP: boolean;
   KEYBOARD_DOWN: boolean;
   KEYBOARD_LEFT: boolean;
@@ -38,8 +38,8 @@ interface IGameInputStore {
   GAMEPAD_BUTTON_13: boolean;
   GAMEPAD_BUTTON_14: boolean;
   GAMEPAD_BUTTON_15: boolean;
-}
-const initialState: IGameInputStore = {
+};
+const initialState: GameInput = {
   KEYBOARD_UP: false,
   KEYBOARD_DOWN: false,
   KEYBOARD_LEFT: false,
@@ -52,31 +52,28 @@ const initialState: IGameInputStore = {
 };
 
 const GameInputStoreContext = createContext<{
-  get: () => IGameInputStore;
-  subscribe: (callback: () => void) => () => void;
+  subscribe: (callback: (input: GameInput) => void) => () => void;
 } | null>(null);
 
 interface GameInputProps {}
 export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
   // setup store
-  const store = useRef(initialState);
-  const subscribers = useRef(new Set<() => void>());
-
-  const get = useCallback(() => store.current, []);
-  const set = useCallback((value: Partial<IGameInputStore>) => {
-    store.current = Object.assign({}, store.current, value);
-    subscribers.current.forEach((callback) => callback());
-  }, []);
-  const subscribe = useCallback((callback: () => void) => {
+  const input = useRef(initialState);
+  const subscribers = useRef(new Set<(input: GameInput) => void>());
+  const subscribe = useCallback((callback: (input: GameInput) => void) => {
     subscribers.current.add(callback);
     return () => {
       subscribers.current.delete(callback);
     };
   }, []);
 
+  const set = (value: Partial<GameInput>) => {
+    input.current = { ...input.current, ...value };
+    subscribers.current.forEach((subscriber) => subscriber(input.current));
+  };
+
   const pollingInputFrame = useRef(0);
   const lastUpdate = useRef(Date.now());
-
   const startPollingInput = useCallback(() => {
     const now = Date.now();
     const delta = now - lastUpdate.current;
@@ -97,19 +94,19 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
   const onKeyDown = useCallback((e: KeyboardEvent) => {
     e.preventDefault();
 
-    if (e.code === "ArrowUp" && !get().KEYBOARD_UP) {
+    if (e.code === "ArrowUp" && !input.current.KEYBOARD_UP) {
       set({ KEYBOARD_UP: true });
     }
-    if (e.code === "ArrowDown" && !get().KEYBOARD_DOWN) {
+    if (e.code === "ArrowDown" && !input.current.KEYBOARD_DOWN) {
       set({ KEYBOARD_DOWN: true });
     }
-    if (e.code === "ArrowLeft" && !get().KEYBOARD_LEFT) {
+    if (e.code === "ArrowLeft" && !input.current.KEYBOARD_LEFT) {
       set({ KEYBOARD_LEFT: true });
     }
-    if (e.code === "ArrowRight" && !get().KEYBOARD_RIGHT) {
+    if (e.code === "ArrowRight" && !input.current.KEYBOARD_RIGHT) {
       set({ KEYBOARD_RIGHT: true });
     }
-    if (e.code === "Space" && !get().KEYBOARD_SPACE) {
+    if (e.code === "Space" && !input.current.KEYBOARD_SPACE) {
       set({ KEYBOARD_SPACE: true });
     }
   }, []);
@@ -117,19 +114,19 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
   const onKeyUp = useCallback((e: KeyboardEvent) => {
     e.preventDefault();
 
-    if (e.code === "ArrowUp" && get().KEYBOARD_UP) {
+    if (e.code === "ArrowUp" && input.current.KEYBOARD_UP) {
       set({ KEYBOARD_UP: false });
     }
-    if (e.code === "ArrowDown" && get().KEYBOARD_DOWN) {
+    if (e.code === "ArrowDown" && input.current.KEYBOARD_DOWN) {
       set({ KEYBOARD_DOWN: false });
     }
-    if (e.code === "ArrowLeft" && get().KEYBOARD_LEFT) {
+    if (e.code === "ArrowLeft" && input.current.KEYBOARD_LEFT) {
       set({ KEYBOARD_LEFT: false });
     }
-    if (e.code === "ArrowRight" && get().KEYBOARD_RIGHT) {
+    if (e.code === "ArrowRight" && input.current.KEYBOARD_RIGHT) {
       set({ KEYBOARD_RIGHT: false });
     }
-    if (e.code === "Space" && get().KEYBOARD_SPACE) {
+    if (e.code === "Space" && input.current.KEYBOARD_SPACE) {
       set({ KEYBOARD_SPACE: false });
     }
   }, []);
@@ -152,24 +149,36 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
       return;
     }
 
-    if (gamepad.buttons[12].pressed && !get().GAMEPAD_BUTTON_12) {
+    if (gamepad.buttons[12].pressed && !input.current.GAMEPAD_BUTTON_12) {
       set({ GAMEPAD_BUTTON_12: true });
-    } else if (!gamepad.buttons[12].pressed && get().GAMEPAD_BUTTON_12) {
+    } else if (
+      !gamepad.buttons[12].pressed &&
+      input.current.GAMEPAD_BUTTON_12
+    ) {
       set({ GAMEPAD_BUTTON_12: false });
     }
-    if (gamepad.buttons[13].pressed && !get().GAMEPAD_BUTTON_13) {
+    if (gamepad.buttons[13].pressed && !input.current.GAMEPAD_BUTTON_13) {
       set({ GAMEPAD_BUTTON_13: true });
-    } else if (!gamepad.buttons[13].pressed && get().GAMEPAD_BUTTON_13) {
+    } else if (
+      !gamepad.buttons[13].pressed &&
+      input.current.GAMEPAD_BUTTON_13
+    ) {
       set({ GAMEPAD_BUTTON_13: false });
     }
-    if (gamepad.buttons[14].pressed && !get().GAMEPAD_BUTTON_14) {
+    if (gamepad.buttons[14].pressed && !input.current.GAMEPAD_BUTTON_14) {
       set({ GAMEPAD_BUTTON_14: true });
-    } else if (!gamepad.buttons[14].pressed && get().GAMEPAD_BUTTON_14) {
+    } else if (
+      !gamepad.buttons[14].pressed &&
+      input.current.GAMEPAD_BUTTON_14
+    ) {
       set({ GAMEPAD_BUTTON_14: false });
     }
-    if (gamepad.buttons[15].pressed && !get().GAMEPAD_BUTTON_15) {
+    if (gamepad.buttons[15].pressed && !input.current.GAMEPAD_BUTTON_15) {
       set({ GAMEPAD_BUTTON_15: true });
-    } else if (!gamepad.buttons[15].pressed && get().GAMEPAD_BUTTON_15) {
+    } else if (
+      !gamepad.buttons[15].pressed &&
+      input.current.GAMEPAD_BUTTON_15
+    ) {
       set({ GAMEPAD_BUTTON_15: false });
     }
   }
@@ -180,7 +189,7 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
 
   const onWindowBlur = useCallback((e: Event) => {
     stopPollingInput();
-    set(initialState);
+    input.current = initialState;
   }, []);
 
   useEffect(() => {
@@ -222,7 +231,6 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
   return (
     <GameInputStoreContext.Provider
       value={{
-        get,
         subscribe,
       }}
     >
@@ -231,15 +239,16 @@ export function GameInput({ children }: PropsWithChildren<GameInputProps>) {
   );
 }
 
-export function useGameInput<T>(selector: (store: IGameInputStore) => T): T;
-export function useGameInput<T>(): IGameInputStore;
-export function useGameInput<T>(selector?: (store: IGameInputStore) => T) {
+export function useGameInput(callback: (input: GameInput) => void) {
   const storeContext = useContext(GameInputStoreContext);
   if (!storeContext) {
     throw Error("No input context.");
   }
-  const state = useSyncExternalStore(storeContext.subscribe, () =>
-    selector ? selector(storeContext.get()) : storeContext.get()
-  );
-  return state;
+
+  useEffect(() => {
+    const unsubcribe = storeContext.subscribe(callback);
+    return () => {
+      unsubcribe();
+    };
+  }, [callback]);
 }

@@ -11,14 +11,14 @@ import {
   ReactNode,
 } from "react";
 import { createStore, Store } from "./createStore";
-import { TEntity } from "./Entity";
+import { EntityId } from "./Entity";
 import { GameInput } from "./Input";
 import Stage from "./Stage";
 
 export type ReactState<S> = [S, Dispatch<SetStateAction<S>>];
 
 export type TGameStore = {
-  entities: Set<TEntity>;
+  entities: Set<EntityId>;
 };
 export const GameContext = createContext<Store<TGameStore> | null>(null);
 interface GameProps {
@@ -30,7 +30,7 @@ export default forwardRef<HTMLDivElement, GameProps>(function Game(
   ref
 ) {
   const gameStore = createStore<TGameStore>({
-    entities: new Set<TEntity>(),
+    entities: new Set<EntityId>(),
   });
   const [width, setWidth] = useState<number>();
   const [height, setHeight] = useState<number>();

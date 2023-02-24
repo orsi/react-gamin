@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import overworldImage from "../assets/Overworld.png";
 import {
-  TEntity,
+  EntityId,
   useBodyComponent,
   usePositionComponent,
 } from "../library/Entity";
@@ -34,7 +34,7 @@ export default function House({ x, y, z, solid }: HouseProps) {
   });
 
   useMovementSystem();
-  useInteractSystem((e: TEntity) => {
+  useInteractSystem((e: EntityId) => {
     console.log("who's interacting me?", e);
   });
 

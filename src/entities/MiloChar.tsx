@@ -28,21 +28,13 @@ import { useInteractSystem, useMovementSystem } from "../library/System";
 import { usePositionComponent, useBodyComponent } from "../library/Entity";
 
 export default function MiloChar() {
-  // const spriteSheet = useSpriteSheet({
-  //   src: characterSpriteSheet,
-  //   cellHeight: 32,
-  //   cellWidth: 16,
-  //   width: 272,
-  //   height: 256,
-  // });
   const [state, setState] = useState("idle");
-  const position = usePositionComponent({ x: 200, y: 200 });
-  const body = useBodyComponent({ width: 16, height: 16, solid: true });
+  usePositionComponent({ x: 30, y: 50 });
+  useBodyComponent({ width: 16, height: 32, solid: true });
   const move = useMovementSystem();
   const interact = useInteractSystem();
 
-  const input = useGameInput();
-  useEffect(() => {
+  useGameInput((input) => {
     if (input.KEYBOARD_UP || input.GAMEPAD_BUTTON_12) {
       setState("walk-up");
     } else if (input.KEYBOARD_DOWN || input.GAMEPAD_BUTTON_13) {
@@ -56,9 +48,9 @@ export default function MiloChar() {
     }
 
     if (input.KEYBOARD_SPACE) {
-      interact(position[0]);
+      interact();
     }
-  }, [input]);
+  });
 
   useLoop(() => {
     if (state === "walk-up") {
@@ -75,7 +67,7 @@ export default function MiloChar() {
   }, [state]);
 
   return (
-    <Render position={position[0]}>
+    <Render>
       <SpriteAnimationStateMachine state={state}>
         <SpriteAnimationState id={`idle`}>
           <Sprite src={tile000Image} />

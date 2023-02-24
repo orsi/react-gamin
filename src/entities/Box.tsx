@@ -1,7 +1,7 @@
 import overworldImage from "../assets/Overworld.png";
 import { useRef } from "react";
 import {
-  TEntity,
+  EntityId,
   useBodyComponent,
   usePositionComponent,
 } from "../library/Entity";
@@ -34,7 +34,7 @@ export default function Box({ x, y, z, solid }: BoxProps) {
   });
 
   useMovementSystem();
-  useInteractSystem((e: TEntity) => {
+  useInteractSystem((e: EntityId) => {
     console.log("who's interacting me?", e);
   });
 

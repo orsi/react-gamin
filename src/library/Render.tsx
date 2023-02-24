@@ -5,17 +5,20 @@ import {
   ReactElement,
   ReactNode,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { IPosition } from "./Entity";
+import { EntityContext, Position } from "./Entity";
 
-interface RenderProps extends PropsWithChildren {
-  position?: IPosition;
-}
+type RenderProps = {
+  children?: ReactNode;
+};
 export const Render = forwardRef<HTMLDivElement, RenderProps>(
-  ({ children, position }, ref) => {
+  ({ children }, ref) => {
+    const { current: entity } = useContext(EntityContext);
+    const [position] = entity.position;
     return (
       <div
         ref={ref}
