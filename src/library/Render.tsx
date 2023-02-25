@@ -96,28 +96,49 @@ export function MultiSpriteSheet({
   src,
   sprites,
 }: MultiSpriteSheetProps) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: `repeat(${tilesPerRow ?? "auto"}, 1fr)`,
-      }}
-    >
-      {sprites.map((sprite, i) => (
-        <img
-          key={`${sprite.id}-${i}`}
-          style={{
-            objectFit: "none",
-            objectPosition: `${sprite.offsetX}px ${sprite.offsetY}px`,
-            height: `${sprite.height}px`,
-            width: `${sprite.width}px`,
-          }}
-          src={src}
-          alt=""
-        />
-      ))}
-    </div>
-  );
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) {
+      return;
+    }
+
+    const canvasWidth =
+      sprites[0].width * (tilesPerRow ? tilesPerRow : sprites.length);
+    const canvasHeight =
+      sprites[0].height *
+      (tilesPerRow ? Math.floor(sprites.length / tilesPerRow) + 1 : 1);
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      return;
+    }
+
+    const image = new Image();
+    image.src = src;
+    image.addEventListener("load", (e) => {
+      for (let i = 0; i < sprites.length; i++) {
+        const column = tilesPerRow ? i % tilesPerRow : i;
+        const row = tilesPerRow ? Math.floor(i / tilesPerRow) : 0;
+        const sprite = sprites[i];
+        ctx.drawImage(
+          image,
+          -sprite.offsetX,
+          -sprite.offsetY,
+          sprite.width,
+          sprite.height,
+          column * sprite.width,
+          row * sprite.height,
+          sprite.width,
+          sprite.height
+        );
+      }
+    });
+  }, []);
+
+  return <canvas ref={ref} />;
 }
 
 interface SpriteSheetProps {

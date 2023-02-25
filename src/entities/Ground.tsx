@@ -17,13 +17,13 @@ export default function Ground() {
   });
 
   const grassTiles = [];
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < 5000; i++) {
     grassTiles.push(spriteSheet.sprites[0]);
   }
   return (
-    <Render position={position[0]}>
+    <Render>
       <MultiSpriteSheet
-        tilesPerRow={25}
+        tilesPerRow={50}
         src={spriteSheet.src}
         sprites={grassTiles}
       />

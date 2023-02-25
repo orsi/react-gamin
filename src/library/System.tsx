@@ -73,7 +73,6 @@ export function useMovementSystem() {
 
   useEffect(() => {
     add(entity);
-    console.log("entity added", entity.position);
     () => {
       remove(entity);
     };
