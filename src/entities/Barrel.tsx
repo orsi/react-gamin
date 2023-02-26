@@ -5,7 +5,12 @@ import {
   useBodyComponent,
   usePositionComponent,
 } from "../library/Entity";
-import { createSpriteSheet, MultiSpriteSheet, Render } from "../library/Render";
+import {
+  createSpriteSheet,
+  MultiSprite,
+  SpriteCanvas,
+  Render,
+} from "../library/Render";
 import { useInteractSystem, useMovementSystem } from "../library/System";
 
 type BarrelProps = {
@@ -15,19 +20,12 @@ type BarrelProps = {
   solid?: boolean;
 };
 export default function Barrel({ x, y, z, solid }: BarrelProps) {
-  const spriteSheet = createSpriteSheet({
-    spriteWidth: 16,
-    spriteHeight: 16,
-    width: 640,
-    height: 576,
-    src: overworldImage,
-  });
   const body = useBodyComponent({
     height: 32,
     width: 16,
     solid: solid ?? true,
   });
-  const position = usePositionComponent({
+  const [position] = usePositionComponent({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,
@@ -39,12 +37,15 @@ export default function Barrel({ x, y, z, solid }: BarrelProps) {
   });
 
   return (
-    <Render position={position[0]}>
-      <MultiSpriteSheet
-        tilesPerRow={1}
-        src={spriteSheet.src}
-        sprites={[spriteSheet.sprites[33], spriteSheet.sprites[73]]}
-      />
-    </Render>
+    <MultiSprite
+      src={overworldImage}
+      x={position.x}
+      y={position.y}
+      sheet={{
+        height: 16,
+        width: 16,
+      }}
+      map={[[33], [73]]}
+    />
   );
 }
