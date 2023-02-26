@@ -17,9 +17,9 @@ import Stage from "./Stage";
 
 export type ReactState<S> = [S, Dispatch<SetStateAction<S>>];
 
-export type TGameStore = {
+export interface TGameStore {
   entities: Set<EntityId>;
-};
+}
 export const GameContext = createContext<Store<TGameStore> | null>(null);
 interface GameProps {
   stages: ReactNode[];

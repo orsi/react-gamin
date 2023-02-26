@@ -28,7 +28,7 @@ import {
 } from "react";
 
 const INPUT_TICK_MS = 1000 / 60;
-type GameInput = {
+interface GameInput {
   KEYBOARD_UP: boolean;
   KEYBOARD_DOWN: boolean;
   KEYBOARD_LEFT: boolean;
@@ -38,7 +38,7 @@ type GameInput = {
   GAMEPAD_BUTTON_13: boolean;
   GAMEPAD_BUTTON_14: boolean;
   GAMEPAD_BUTTON_15: boolean;
-};
+}
 const initialState: GameInput = {
   KEYBOARD_UP: false,
   KEYBOARD_DOWN: false,

@@ -1,14 +1,14 @@
 import { CSSProperties, useEffect, useRef, useState } from "react";
 
-export type Sheet = {
+export interface Sheet {
   width: number;
   height: number;
-};
+}
 
-export type Animation = {
+export interface Animation {
   frameLength: number;
   cells: number[];
-};
+}
 
 export function getSpriteStyles(
   x?: number,
@@ -54,7 +54,7 @@ export function getSpriteStyles(
   return style;
 }
 
-export type SpriteProps = {
+export interface SpriteProps {
   alt?: string;
   src: string;
   x?: number;
@@ -64,7 +64,7 @@ export type SpriteProps = {
   selectedSprite?: number;
   animations?: Animation[];
   selectedAnimation?: number;
-};
+}
 export function Sprite({
   alt,
   animations,
@@ -156,7 +156,7 @@ export function Sprite({
   );
 }
 
-type MultiSpriteProps = {
+interface MultiSpriteProps {
   alt?: string;
   map: number[][];
   sheet: Sheet;
@@ -164,7 +164,7 @@ type MultiSpriteProps = {
   x?: number;
   y?: number;
   z?: number;
-};
+}
 export function MultiSprite({
   alt,
   map,

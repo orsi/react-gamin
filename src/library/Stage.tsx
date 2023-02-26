@@ -1,18 +1,13 @@
-import {
-  createContext,
-  ReactNode,
-  useId,
-  useRef,
-} from "react";
+import { createContext, ReactNode, useId, useRef } from "react";
 
-type Stage = {};
+interface Stage {}
 export const StageContext = createContext<Stage>({
   id: "default",
 });
-type StageProps = {
+interface StageProps {
   key?: React.Key;
   children?: ReactNode;
-};
+}
 export default function Stage({ children }: StageProps) {
   const stage = useRef({
     id: useId(),

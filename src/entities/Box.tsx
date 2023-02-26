@@ -7,12 +7,12 @@ import {
 import { MultiSprite } from "../library/Render";
 import { useInteractSystem, useMovementSystem } from "../library/System";
 
-type BoxProps = {
+interface BoxProps {
   x?: number;
   y?: number;
   z?: number;
   solid?: boolean;
-};
+}
 export default function Box({ x, y, z, solid }: BoxProps) {
   const body = useBodyComponent({
     height: 32,

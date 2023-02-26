@@ -7,11 +7,11 @@ import {
   useSyncExternalStore,
 } from "react";
 
-export type Store<T> = {
+export interface Store<T> {
   get: () => T;
   set: (value: Partial<T>) => void;
   subscribe: (callback: () => void) => () => void;
-};
+}
 export function createStore<T>(initialState: T) {
   const store = useRef<T>(initialState);
   const subscribers = useRef(new Set<() => void>());

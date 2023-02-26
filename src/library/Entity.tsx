@@ -7,15 +7,15 @@ import {
   useRef,
 } from "react";
 
-export type EntityId = {
+export interface EntityId {
   id: string;
-};
+}
 export const EntityContext =
   createContext<null | React.MutableRefObject<EntityId>>(null);
-type EntityProps = {
+interface EntityProps {
   key: React.Key;
   children: ReactNode;
-};
+}
 export function Entity({ children }: EntityProps) {
   const ref = useRef<EntityId>({
     id: useId(),
@@ -25,9 +25,9 @@ export function Entity({ children }: EntityProps) {
   );
 }
 
-export type Component<T extends string> = {
-  type: T;
-};
+export interface Component<T extends string> {
+  interface: T;
+}
 export type EntityComponentState<T> = [
   T,
   React.Dispatch<React.SetStateAction<T>>
@@ -38,15 +38,15 @@ export type EntityWithComponent<T extends Component<string>> = EntityId & {
 
 ///
 
-export type BodyData = {
+export interface BodyData {
   solid?: boolean;
   height?: number;
   width?: number;
-};
-export type Body = Component<"body"> & BodyData;
+}
+export interface Body extends Component<"body">, BodyData {}
 export function useBodyComponent(initialBody?: Partial<BodyData>) {
   const state = useState<Body>({
-    type: "body",
+    interface: "body",
     solid: true,
     width: 10,
     height: 10,
@@ -58,15 +58,15 @@ export function useBodyComponent(initialBody?: Partial<BodyData>) {
   return state;
 }
 
-export type PositionData = {
+export interface PositionData {
   x: number;
   y: number;
   z: number;
-};
-export type Position = Component<"position"> & PositionData;
+}
+export interface Position extends Component<"position">, PositionData {}
 export function usePositionComponent(initialPosition?: Partial<PositionData>) {
   const state = useState<Position>({
-    type: "position",
+    interface: "position",
     x: 0,
     y: 0,
     z: 0,

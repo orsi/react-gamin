@@ -15,14 +15,14 @@ import {
   Body,
 } from "./Entity";
 
-type System = {};
+interface System {}
 export const SystemContext = createContext<System>({
   id: "default",
 });
-type SystemProps = {
+interface SystemProps {
   key: React.Key;
   children?: ReactNode;
-};
+}
 export default function System({ children }: SystemProps) {
   const System = useRef({
     id: useId(),

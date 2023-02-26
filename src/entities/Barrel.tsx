@@ -1,24 +1,18 @@
 import overworldImage from "../assets/Overworld.png";
-import { useRef } from "react";
 import {
   EntityId,
   useBodyComponent,
   usePositionComponent,
 } from "../library/Entity";
-import {
-  createSpriteSheet,
-  MultiSprite,
-  SpriteCanvas,
-  Render,
-} from "../library/Render";
+import { MultiSprite } from "../library/Render";
 import { useInteractSystem, useMovementSystem } from "../library/System";
 
-type BarrelProps = {
+interface BarrelProps {
   x?: number;
   y?: number;
   z?: number;
   solid?: boolean;
-};
+}
 export default function Barrel({ x, y, z, solid }: BarrelProps) {
   const body = useBodyComponent({
     height: 32,

@@ -7,12 +7,12 @@ import {
 import { MultiSprite } from "../library/Render";
 import { useInteractSystem, useMovementSystem } from "../library/System";
 
-type HouseProps = {
+interface HouseProps {
   x?: number;
   y?: number;
   z?: number;
   solid?: boolean;
-};
+}
 export default function House({ x, y, z, solid }: HouseProps) {
   const body = useBodyComponent({
     height: 80,

@@ -7,12 +7,12 @@ import {
 import { MultiSprite } from "../library/Render";
 import { useInteractSystem, useMovementSystem } from "../library/System";
 
-type FountainProps = {
+interface FountainProps {
   x?: number;
   y?: number;
   z?: number;
   solid?: boolean;
-};
+}
 export default function Fountain({ x, y, z, solid }: FountainProps) {
   const body = useBodyComponent({
     height: 48,
