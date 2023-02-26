@@ -1,7 +1,6 @@
-import { PropsWithChildren } from "react";
 import MyGame from "./entities/MyGame";
 
-export default function App({ children }: PropsWithChildren) {
+export default function App() {
   return (
     <div id="app">
       <MyGame />

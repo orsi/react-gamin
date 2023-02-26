@@ -1,10 +1,8 @@
 import {
   createContext,
   PropsWithChildren,
-  ReactNode,
   useContext,
   useEffect,
-  useId,
   useRef,
 } from "react";
 import {
@@ -14,23 +12,6 @@ import {
   Position,
   Body,
 } from "./Entity";
-
-interface System {}
-export const SystemContext = createContext<System>({
-  id: "default",
-});
-interface SystemProps {
-  key: React.Key;
-  children?: ReactNode;
-}
-export default function System({ children }: SystemProps) {
-  const System = useRef({
-    id: useId(),
-  });
-  return (
-    <SystemContext.Provider value={System}>{children}</SystemContext.Provider>
-  );
-}
 
 const MovementSystemContext = createContext<any>(null);
 export function MovementSystem({ children }: PropsWithChildren) {
@@ -51,8 +32,8 @@ const SPEED = 2;
 type TDirection = "up" | "down" | "left" | "right";
 export function useMovementSystem() {
   const { current } = useContext(EntityContext);
-  const entity = current as EntityWithComponent<Position> &
-    EntityWithComponent<Body>;
+  const entity = current as EntityWithComponent<"position", Position> &
+    EntityWithComponent<"body", Body>;
   if (!entity || !entity.position || !entity.body) {
     throw Error("No entity found.");
   }

@@ -1,16 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import npcImage from "../assets/npc.png";
 import { useGameInput } from "../library/Input";
-import useLoop from "../library/useLogicLoop";
-import {
-  Animation,
-  Sprite,
-  SpriteAnimationStateMachine,
-  SpriteAnimationState,
-  Render,
-} from "../library/Render";
+import { Sprite } from "../library/Render";
 import { useInteractSystem, useMovementSystem } from "../library/System";
 import { usePositionComponent, useBodyComponent } from "../library/Entity";
+import { useLoop } from "../library/Game";
 
 export default function MiloChar() {
   const [state, setState] = useState("idle");

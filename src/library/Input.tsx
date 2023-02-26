@@ -24,7 +24,6 @@ import {
   useCallback,
   createContext,
   useContext,
-  useSyncExternalStore,
 } from "react";
 
 const INPUT_TICK_MS = 1000 / 60;

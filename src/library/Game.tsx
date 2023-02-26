@@ -3,14 +3,13 @@ import {
   useEffect,
   PropsWithChildren,
   createContext,
-  useContext,
   Dispatch,
   SetStateAction,
-  useSyncExternalStore,
   forwardRef,
   ReactNode,
+  useRef,
+  MutableRefObject,
 } from "react";
-import { createStore, Store } from "./createStore";
 import { EntityId } from "./Entity";
 import { GameInput } from "./Input";
 import Stage from "./Stage";
@@ -20,7 +19,9 @@ export type ReactState<S> = [S, Dispatch<SetStateAction<S>>];
 export interface TGameStore {
   entities: Set<EntityId>;
 }
-export const GameContext = createContext<Store<TGameStore> | null>(null);
+export const GameContext = createContext<null | MutableRefObject<TGameStore>>(
+  null
+);
 interface GameProps {
   stages: ReactNode[];
   systems: (({ children }: PropsWithChildren) => JSX.Element)[];
@@ -29,7 +30,7 @@ export default forwardRef<HTMLDivElement, GameProps>(function Game(
   { stages, systems },
   ref
 ) {
-  const gameStore = createStore<TGameStore>({
+  const gameStore = useRef<TGameStore>({
     entities: new Set<EntityId>(),
   });
   const [width, setWidth] = useState<number>();
@@ -83,23 +84,32 @@ export default forwardRef<HTMLDivElement, GameProps>(function Game(
   );
 });
 
-export function useGameStore<O>() {
-  const store = useContext(GameContext);
-  if (!store) {
-    throw new Error("No game context.");
-  }
-  return store.get();
-}
+const FPS = 60;
+const FRAME_MS = 1000 / FPS;
 
-export function useGameState<O>(selector: (game: TGameStore) => O): O;
-export function useGameState(): TGameStore;
-export function useGameState<O>(selector?: (game: TGameStore) => O) {
-  const store = useContext(GameContext);
-  if (!store) {
-    throw new Error("No game context.");
-  }
-  const state = useSyncExternalStore(store.subscribe, () =>
-    selector ? selector(store.get()) : store.get()
-  );
-  return state;
+/**
+ * This hook will run the callback given to it continously
+ * via a requestAnimationFrame loop.
+ *
+ * @param callback Code to run in a continuous loop
+ * @param deps State dependencies
+ */
+export function useLoop(callback: () => void, deps?: React.DependencyList) {
+  const lastUpdate = useRef(Date.now());
+
+  useEffect(() => {
+    let frameId = 0;
+    const frame = (time: number) => {
+      const now = Date.now();
+      const delta = now - lastUpdate.current;
+      if (delta > FRAME_MS) {
+        callback();
+        lastUpdate.current = now;
+      }
+      frameId = requestAnimationFrame(frame);
+    };
+
+    frameId = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(frameId);
+  }, [deps]);
 }

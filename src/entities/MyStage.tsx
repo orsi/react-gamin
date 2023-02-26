@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { Entity } from "../library/Entity";
 import Barrel from "./Barrel";
 import Box from "./Box";
