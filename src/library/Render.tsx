@@ -156,9 +156,14 @@ export function Sprite({
   );
 }
 
+interface MappedSprite {
+  animations?: Animation[];
+  selectedSprite?: number;
+  selectedAnimation?: number;
+}
 interface MultiSpriteProps {
   alt?: string;
-  map: number[][];
+  map: MappedSprite[][];
   sheet: Sheet;
   src: string;
   x?: number;
@@ -184,11 +189,13 @@ export function MultiSprite({
       const key = `multi-sprite-row-${x}`;
       multiSpriteElements[y][x] = (
         <Sprite
+          alt={alt ? `${alt}-${x}-${y}` : `${x}-${y}`}
           key={key}
           src={src}
           sheet={sheet}
-          selectedSprite={row[x]}
-          alt={alt ? `${alt}-${x}-${y}` : `${x}-${y}`}
+          animations={row[x].animations}
+          selectedSprite={row[x].selectedSprite}
+          selectedAnimation={row[x].selectedAnimation}
         />
       );
     }

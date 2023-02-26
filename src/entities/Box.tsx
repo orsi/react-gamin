@@ -39,7 +39,7 @@ export default function Box({ x, y, z, solid }: BoxProps) {
         height: 16,
         width: 16,
       }}
-      map={[[30], [70]]}
+      map={[[{ selectedSprite: 30 }], [{ selectedSprite: 70 }]]}
     />
   );
 }

@@ -38,11 +38,41 @@ export default function House({ x, y, z, solid }: HouseProps) {
         height: 16,
       }}
       map={[
-        [6, 7, 8, 9, 10],
-        [46, 47, 48, 49, 50],
-        [86, 87, 88, 89, 90],
-        [126, 127, 128, 129, 130],
-        [166, 167, 168, 169, 170],
+        [
+          { selectedSprite: 6 },
+          { selectedSprite: 7 },
+          { selectedSprite: 8 },
+          { selectedSprite: 9 },
+          { selectedSprite: 10 },
+        ],
+        [
+          { selectedSprite: 46 },
+          { selectedSprite: 47 },
+          { selectedSprite: 48 },
+          { selectedSprite: 49 },
+          { selectedSprite: 50 },
+        ],
+        [
+          { selectedSprite: 86 },
+          { selectedSprite: 87 },
+          { selectedSprite: 88 },
+          { selectedSprite: 89 },
+          { selectedSprite: 90 },
+        ],
+        [
+          { selectedSprite: 126 },
+          { selectedSprite: 127 },
+          { selectedSprite: 128 },
+          { selectedSprite: 129 },
+          { selectedSprite: 130 },
+        ],
+        [
+          { selectedSprite: 166 },
+          { selectedSprite: 167 },
+          { selectedSprite: 168 },
+          { selectedSprite: 169 },
+          { selectedSprite: 170 },
+        ],
       ]}
       x={position.x}
       y={position.y}

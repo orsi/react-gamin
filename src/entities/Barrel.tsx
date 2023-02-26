@@ -39,7 +39,7 @@ export default function Barrel({ x, y, z, solid }: BarrelProps) {
         height: 16,
         width: 16,
       }}
-      map={[[33], [73]]}
+      map={[[{ selectedSprite: 33 }], [{ selectedSprite: 73 }]]}
     />
   );
 }

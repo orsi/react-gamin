@@ -10,10 +10,10 @@ import MiloChar from "./MiloChar";
 export default function MyStage() {
   const [entities, setEntities] = useState([
     <Ground />,
-    <Box x={50} y={50} solid={true} />,
-    <Barrel x={100} y={50} solid={true} />,
+    <Box x={350} y={150} solid={true} />,
+    <Barrel x={400} y={150} solid={true} />,
     <House x={300} y={200} solid={true} />,
-    <Fountain x={50} y={200} solid={true} />,
+    <Fountain x={200} y={200} solid={true} />,
     <MiloChar />,
   ]);
 

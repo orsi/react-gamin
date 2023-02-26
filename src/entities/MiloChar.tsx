@@ -8,7 +8,7 @@ import { useLoop } from "../library/Game";
 
 export default function MiloChar() {
   const [state, setState] = useState("idle");
-  const [position, setPosition] = usePositionComponent({ x: 30, y: 50 });
+  const [position, setPosition] = usePositionComponent({ x: 260, y: 200 });
   useBodyComponent({ width: 16, height: 32, solid: true });
   const move = useMovementSystem();
   const interact = useInteractSystem();
