@@ -1,5 +1,6 @@
 import {
   Children,
+  CSSProperties,
   forwardRef,
   PropsWithChildren,
   ReactElement,
@@ -160,11 +161,149 @@ export function SpriteSheet({ src, sprite }: SpriteSheetProps) {
   );
 }
 
-interface SpriteProps {
-  src?: string;
+function getSpriteStyles(
+  x: number,
+  y: number,
+  z: number,
+  imageWidth?: number,
+  spriteWidth?: number,
+  spriteHeight?: number,
+  spriteIndex?: number
+) {
+  const style: CSSProperties = {
+    left: "0",
+    position: "absolute",
+    top: "0",
+    transform: `translate(${x ?? 0}px, ${y ?? 0}px)`,
+    zIndex: `${z ?? 0}`,
+  };
+
+  if (
+    imageWidth != null &&
+    spriteWidth != null &&
+    spriteHeight != null &&
+    spriteIndex != null
+  ) {
+    const tilesPerRow = imageWidth / spriteWidth;
+    const offsetX = -(spriteIndex % tilesPerRow) * spriteWidth;
+    const offsetY = -Math.floor(spriteIndex / tilesPerRow) * spriteHeight;
+    style.height = `${spriteHeight}px`;
+    style.objectFit = `none`;
+    style.objectPosition = `${offsetX}px ${offsetY}px`;
+    style.width = `${spriteWidth}px`;
+  }
+
+  return style;
 }
-export function Sprite({ src }: SpriteProps) {
-  return <img src={src} alt="" />;
+
+type Sheet = {
+  width: number;
+  height: number;
+};
+type Animation = {
+  frameLength: number;
+  cells: number[];
+};
+type SpriteProps = {
+  alt?: string;
+  src: string;
+  x?: number;
+  y?: number;
+  z?: number;
+  sheet?: Sheet;
+  selectedSprite?: number;
+  animations?: Animation[];
+  selectedAnimation?: number;
+};
+export function Sprite({
+  alt,
+  animations,
+  selectedAnimation,
+  selectedSprite,
+  sheet,
+  src,
+  x,
+  y,
+  z,
+}: SpriteProps) {
+  const [img, setImg] = useState<HTMLImageElement>();
+  const [currentSprite, setCurrentSprite] = useState(selectedSprite ?? 0);
+
+  useEffect(() => {
+    const image = new Image();
+    image.src = src;
+    image.addEventListener("load", (e) => {
+      setImg(image);
+    });
+  }, []);
+
+  // animation setup
+  const lastUpdateRef = useRef(0);
+  const requestFrameRef = useRef(0);
+  const lastAnimationFrameRef = useRef({
+    animation: animations?.[selectedAnimation],
+    frame: 0,
+  });
+
+  useEffect(() => {
+    const updateAnimation = (time: number) => {
+      requestFrameRef.current = requestAnimationFrame(updateAnimation);
+
+      const delta = time - lastUpdateRef.current;
+      const animation = animations[selectedAnimation];
+      if (animation && delta > animation.frameLength) {
+        // save previous animation frame as it will be used
+        // to determine the fallback animation frame if selectedAnimation
+        // becomes undefined
+        lastAnimationFrameRef.current = {
+          animation,
+          frame:
+            (lastAnimationFrameRef.current.frame + 1) % animation.cells.length,
+        };
+        setCurrentSprite(animation.cells[lastAnimationFrameRef.current.frame]);
+        lastUpdateRef.current = time;
+      }
+    };
+
+    if (!animations) {
+      return;
+    }
+
+    if (selectedAnimation == null) {
+      setCurrentSprite(
+        lastAnimationFrameRef.current?.animation?.cells?.[0] ?? 0
+      );
+    }
+
+    requestFrameRef.current = requestAnimationFrame(updateAnimation);
+    return () => {
+      cancelAnimationFrame(requestFrameRef.current);
+    };
+  }, [animations, selectedAnimation]);
+
+  const style = getSpriteStyles(
+    x,
+    y,
+    z,
+    img?.width,
+    sheet?.width,
+    sheet?.height,
+    currentSprite
+  );
+
+  return (
+    <>
+      {img && (
+        <img
+          style={style}
+          src={src}
+          width={sheet?.width ?? img.width}
+          height={sheet?.height ?? img.height}
+          alt={alt ?? `Sprite`}
+        />
+      )}
+    </>
+  );
 }
 
 export interface AnimationProps {
@@ -227,4 +366,93 @@ export function SpriteAnimationStateMachine({
       (child as ReactElement<SpriteAnimationStateProps>).props?.id === state
   );
   return <>{currentChild}</>;
+}
+
+export type TileMapProps = {};
+export function TileMap(props: MultiSpriteSheetProps) {
+  // const ref = useRef<HTMLCanvasElement>(null);
+  // useEffect(() => {
+  //   const canvas = ref.current;
+  //   if (!canvas) {
+  //     return;
+  //   }
+  //   const canvasWidth =
+  //     sprites[0].width * (tilesPerRow ? tilesPerRow : sprites.length);
+  //   const canvasHeight =
+  //     sprites[0].height *
+  //     (tilesPerRow ? Math.floor(sprites.length / tilesPerRow) + 1 : 1);
+  //   canvas.width = canvasWidth;
+  //   canvas.height = canvasHeight;
+  //   const ctx = canvas.getContext("2d");
+  //   if (!ctx) {
+  //     return;
+  //   }
+  //   const image = new Image();
+  //   image.src = src;
+  //   image.addEventListener("load", (e) => {
+  //     for (let i = 0; i < sprites.length; i++) {
+  //       const column = tilesPerRow ? i % tilesPerRow : i;
+  //       const row = tilesPerRow ? Math.floor(i / tilesPerRow) : 0;
+  //       const sprite = sprites[i];
+  //       ctx.drawImage(
+  //         image,
+  //         -sprite.offsetX,
+  //         -sprite.offsetY,
+  //         sprite.width,
+  //         sprite.height,
+  //         column * sprite.width,
+  //         row * sprite.height,
+  //         sprite.width,
+  //         sprite.height
+  //       );
+  //     }
+  //   });
+  // }, []);
+  // return <canvas ref={ref} />;
+}
+
+export type TileProps = {
+  tilesPerRow?: number;
+};
+
+export function Tile(props: MultiSpriteSheetProps) {
+  // const ref = useRef<HTMLCanvasElement>(null);
+  // useEffect(() => {
+  //   const canvas = ref.current;
+  //   if (!canvas) {
+  //     return;
+  //   }
+  //   const canvasWidth =
+  //     sprites[0].width * (tilesPerRow ? tilesPerRow : sprites.length);
+  //   const canvasHeight =
+  //     sprites[0].height *
+  //     (tilesPerRow ? Math.floor(sprites.length / tilesPerRow) + 1 : 1);
+  //   canvas.width = canvasWidth;
+  //   canvas.height = canvasHeight;
+  //   const ctx = canvas.getContext("2d");
+  //   if (!ctx) {
+  //     return;
+  //   }
+  //   const image = new Image();
+  //   image.src = src;
+  //   image.addEventListener("load", (e) => {
+  //     for (let i = 0; i < sprites.length; i++) {
+  //       const column = tilesPerRow ? i % tilesPerRow : i;
+  //       const row = tilesPerRow ? Math.floor(i / tilesPerRow) : 0;
+  //       const sprite = sprites[i];
+  //       ctx.drawImage(
+  //         image,
+  //         -sprite.offsetX,
+  //         -sprite.offsetY,
+  //         sprite.width,
+  //         sprite.height,
+  //         column * sprite.width,
+  //         row * sprite.height,
+  //         sprite.width,
+  //         sprite.height
+  //       );
+  //     }
+  //   });
+  // }, []);
+  // return <canvas ref={ref} />;
 }

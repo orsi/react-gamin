@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Entity } from "../library/Entity";
 import Barrel from "./Barrel";
 import Box from "./Box";
@@ -22,6 +22,9 @@ export default function MyStage() {
       {entities.map((entity, i) => (
         <Entity key={`entity-${i}`}>{entity}</Entity>
       ))}
+      {/* {entities.map((entity, i) => (
+        <Fragment key={`entity-${i}`}>{entity}</Fragment>
+      ))} */}
     </>
   );
 }

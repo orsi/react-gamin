@@ -10,11 +10,8 @@ import {
 export type EntityId = {
   id: string;
 };
-export const EntityContext = createContext<React.MutableRefObject<EntityId>>({
-  current: {
-    id: "default",
-  },
-});
+export const EntityContext =
+  createContext<null | React.MutableRefObject<EntityId>>(null);
 type EntityProps = {
   key: React.Key;
   children: ReactNode;

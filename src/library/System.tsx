@@ -47,7 +47,7 @@ export function MovementSystem({ children }: PropsWithChildren) {
     </MovementSystemContext.Provider>
   );
 }
-const SPEED = 5;
+const SPEED = 2;
 type TDirection = "up" | "down" | "left" | "right";
 export function useMovementSystem() {
   const { current } = useContext(EntityContext);

@@ -1,20 +1,5 @@
-import { useEffect, useState } from "react";
-import tile000Image from "../assets/npc/tile000.png";
-import tile001Image from "../assets/npc/tile001.png";
-import tile002Image from "../assets/npc/tile002.png";
-import tile003Image from "../assets/npc/tile003.png";
-import tile004Image from "../assets/npc/tile004.png";
-import tile005Image from "../assets/npc/tile005.png";
-import tile006Image from "../assets/npc/tile006.png";
-import tile007Image from "../assets/npc/tile007.png";
-import tile008Image from "../assets/npc/tile008.png";
-import tile009Image from "../assets/npc/tile009.png";
-import tile010Image from "../assets/npc/tile010.png";
-import tile011Image from "../assets/npc/tile011.png";
-import tile012Image from "../assets/npc/tile012.png";
-import tile013Image from "../assets/npc/tile013.png";
-import tile014Image from "../assets/npc/tile014.png";
-import tile015Image from "../assets/npc/tile015.png";
+import { useEffect, useRef, useState } from "react";
+import npcImage from "../assets/npc.png";
 import { useGameInput } from "../library/Input";
 import useLoop from "../library/useLogicLoop";
 import {
@@ -29,7 +14,7 @@ import { usePositionComponent, useBodyComponent } from "../library/Entity";
 
 export default function MiloChar() {
   const [state, setState] = useState("idle");
-  usePositionComponent({ x: 30, y: 50 });
+  const [position, setPosition] = usePositionComponent({ x: 30, y: 50 });
   useBodyComponent({ width: 16, height: 32, solid: true });
   const move = useMovementSystem();
   const interact = useInteractSystem();
@@ -66,33 +51,34 @@ export default function MiloChar() {
     }
   }, [state]);
 
+  const animations = useRef([
+    { frameLength: 250, cells: [0, 1, 2, 3] },
+    { frameLength: 250, cells: [4, 5, 6, 7] },
+    { frameLength: 250, cells: [8, 9, 10, 11] },
+    { frameLength: 250, cells: [12, 13, 14, 15] },
+  ]);
+  let playAnimation = undefined;
+  if (state === "walk-up") {
+    playAnimation = 2;
+  } else if (state === "walk-down") {
+    playAnimation = 0;
+  } else if (state === "walk-left") {
+    playAnimation = 3;
+  } else if (state === "walk-right") {
+    playAnimation = 1;
+  }
   return (
-    <Render>
-      <SpriteAnimationStateMachine state={state}>
-        <SpriteAnimationState id={`idle`}>
-          <Sprite src={tile000Image} />
-        </SpriteAnimationState>
-        <SpriteAnimationState id={`walk-up`}>
-          <Animation
-            srcs={[tile008Image, tile009Image, tile010Image, tile011Image]}
-          />
-        </SpriteAnimationState>
-        <SpriteAnimationState id={`walk-down`}>
-          <Animation
-            srcs={[tile000Image, tile001Image, tile002Image, tile003Image]}
-          />
-        </SpriteAnimationState>
-        <SpriteAnimationState id={`walk-left`}>
-          <Animation
-            srcs={[tile012Image, tile013Image, tile014Image, tile015Image]}
-          />
-        </SpriteAnimationState>
-        <SpriteAnimationState id={`walk-right`}>
-          <Animation
-            srcs={[tile004Image, tile005Image, tile006Image, tile007Image]}
-          />
-        </SpriteAnimationState>
-      </SpriteAnimationStateMachine>
-    </Render>
+    <Sprite
+      src={npcImage}
+      x={position.x}
+      y={position.y}
+      sheet={{
+        height: 32,
+        width: 16,
+      }}
+      selectedSprite={0}
+      animations={animations.current}
+      selectedAnimation={playAnimation}
+    />
   );
 }
