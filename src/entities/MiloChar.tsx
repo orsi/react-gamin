@@ -1,17 +1,35 @@
-import { useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import npcImage from "../assets/npc.png";
 import { useGameInput } from "../library/Input";
 import { Sprite } from "../library/Render";
 import { useInteractSystem, useMovementSystem } from "../library/System";
-import { usePositionComponent, useBodyComponent } from "../library/Entity";
+import {
+  usePositionComponent,
+  useBodyComponent,
+  EntityContext,
+} from "../library/Entity";
 import { useLoop } from "../library/Game";
+import { StageContext } from "../library/Stage";
 
-export default function MiloChar() {
+interface MiloCharProps {
+  x?: number;
+  y?: number;
+}
+export default function MiloChar({ x, y }: MiloCharProps) {
+  const stage = useContext(StageContext);
+  const entity = useContext(EntityContext);
   const [state, setState] = useState("idle");
-  const [position, setPosition] = usePositionComponent({ x: 260, y: 200 });
-  useBodyComponent({ width: 16, height: 32, solid: true });
-  const move = useMovementSystem();
-  const interact = useInteractSystem();
+  const [position, setPosition] = usePositionComponent({
+    x: x ?? 260,
+    y: y ?? 200,
+  });
+  const [body] = useBodyComponent({
+    width: 16,
+    height: 32,
+    solid: true,
+  });
+  const move = useMovementSystem(position, setPosition, body);
+  // const interact = useInteractSystem(ref);
 
   useGameInput((input) => {
     if (input.KEYBOARD_UP || input.GAMEPAD_BUTTON_12) {
@@ -26,9 +44,9 @@ export default function MiloChar() {
       setState("idle");
     }
 
-    if (input.KEYBOARD_SPACE) {
-      interact();
-    }
+    // if (input.KEYBOARD_SPACE) {
+    //   interact();
+    // }
   });
 
   useLoop(() => {
@@ -61,8 +79,13 @@ export default function MiloChar() {
   } else if (state === "walk-right") {
     playAnimation = 1;
   }
+
   return (
     <Sprite
+      onClick={() => {
+        console.log("click!", stage, entity.current.id);
+        stage.removeEntity(entity.current.id);
+      }}
       src={npcImage}
       x={position.x}
       y={position.y}

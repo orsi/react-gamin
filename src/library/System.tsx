@@ -1,27 +1,29 @@
-import {
+import React, {
   createContext,
+  Dispatch,
   PropsWithChildren,
+  SetStateAction,
   useContext,
   useEffect,
   useRef,
 } from "react";
-import {
-  EntityId,
-  EntityContext,
-  EntityWithComponent,
-  Position,
-  Body,
-} from "./Entity";
+import { IEntity, EntityRef, Position, Body, EntityContext } from "./Entity";
+import { ReactState } from "./Game";
 
 const MovementSystemContext = createContext<any>(null);
 export function MovementSystem({ children }: PropsWithChildren) {
-  const entities = useRef(new Set());
+  const entities = useRef(new Set<EntityRef<any>>());
+
+  const get = () => [...entities.current];
+  const add = (entity: EntityRef<any>) => entities.current.add(entity);
+  const remove = (entity: EntityRef<any>) => entities.current.delete(entity);
+
   return (
     <MovementSystemContext.Provider
       value={{
-        get: () => [...entities.current],
-        add: (entity: EntityId) => entities.current.add(entity),
-        remove: (entity: EntityId) => entities.current.delete(entity),
+        get,
+        add,
+        remove,
       }}
     >
       {children}
@@ -30,37 +32,30 @@ export function MovementSystem({ children }: PropsWithChildren) {
 }
 const SPEED = 2;
 type TDirection = "up" | "down" | "left" | "right";
-export function useMovementSystem() {
-  const { current } = useContext(EntityContext);
-  const entity = current as EntityWithComponent<"position", Position> &
-    EntityWithComponent<"body", Body>;
-  if (!entity || !entity.position || !entity.body) {
-    throw Error("No entity found.");
-  }
-  if (!entity.position) {
-    throw Error("Entity does not have a position.");
-  }
-  if (!entity.body) {
-    throw Error("Entity does not have a body.");
-  }
-  const [position, setPosition] = entity.position;
-  const [body, setBody] = entity?.body;
-  const context = useContext(MovementSystemContext);
-  if (!context) {
-    throw Error("System context not found. Did you create the system?");
-  }
-  const { get, add, remove } = context;
-  const entities = get();
+export function useMovementSystem(
+  position: Position,
+  setPosition: Dispatch<SetStateAction<Position>>,
+  body: Body
+) {
+  const entityRef = useContext(EntityContext);
 
+  const context = useContext(MovementSystemContext);
+  const { get, add, remove } = context;
+  const entities = get() as EntityRef<any>[];
   useEffect(() => {
-    add(entity);
+    add(entityRef);
     () => {
-      remove(entity);
+      remove(entityRef);
     };
   }, []);
 
   const move = (direction: TDirection) => {
-    let nextPosition = { x: 0, y: 0, z: 0, ...position };
+    let nextPosition = {
+      x: 0,
+      y: 0,
+      z: 0,
+      ...position,
+    };
     if (direction === "up") nextPosition.y = nextPosition.y - 1 * SPEED;
     if (direction === "right") nextPosition.x = nextPosition.x + 1 * SPEED;
     if (direction === "down") nextPosition.y = nextPosition.y + 1 * SPEED;
@@ -71,15 +66,17 @@ export function useMovementSystem() {
     const eYMin = nextPosition.y;
     const eYMax = nextPosition.y + body.height!;
 
-    const e2 = Array.from(entities).find((e) => {
-      if (e === entity) {
+    const foundEntity = Array.from(entities).find((otherEntity) => {
+      if (
+        otherEntity === entityRef ||
+        !otherEntity.current.position ||
+        !otherEntity.current.body
+      ) {
         return false;
       }
-      if (!e?.position || !e?.body) {
-        return false;
-      }
-      const [ePosition] = e?.position;
-      const [eBody] = e?.body;
+
+      const [ePosition] = otherEntity.current.position;
+      const [eBody] = otherEntity.current.body;
 
       const e2XMin = ePosition.x;
       const e2XMax = ePosition.x + eBody.width!;
@@ -94,13 +91,13 @@ export function useMovementSystem() {
     });
 
     // nothing is there
-    if (!e2) {
+    if (!foundEntity) {
       setPosition(nextPosition);
       return true;
     }
 
     // entity there is not solid
-    if (e2 && !e2?.body?.[0]?.solid) {
+    if (foundEntity && !foundEntity.current.body?.[0]?.solid) {
       setPosition(nextPosition);
       return true;
     }
@@ -120,8 +117,8 @@ export function InteractSystem({ children }: PropsWithChildren) {
     <InteractSystemContext.Provider
       value={{
         get: () => [...entities.current],
-        add: (entity: EntityId) => entities.current.add(entity),
-        remove: (entity: EntityId) => entities.current.delete(entity),
+        add: (entity: IEntity) => entities.current.add(entity),
+        remove: (entity: IEntity) => entities.current.delete(entity),
       }}
     >
       {children}
@@ -129,37 +126,37 @@ export function InteractSystem({ children }: PropsWithChildren) {
   );
 }
 
-export function useInteractSystem(callback?: (e: EntityId) => void) {
-  const { current: entity } = useContext(EntityContext);
+export function useInteractSystem(callback?: () => void) {
+  const entityRef = useContext(EntityContext);
   const context = useContext(InteractSystemContext);
   if (!context) {
     throw Error("System context not found. Did you create the system?");
   }
   const { get, add, remove } = context;
-  const entities = get();
+  const entities = get() as EntityRef<any>[];
 
   useEffect(() => {
-    entity.onInteracted = callback ?? function () {};
-    add(entity);
+    entityRef.current.onInteracted = callback ?? function () {};
+    add(entityRef);
     () => {
-      delete entity.onInteracted;
-      remove(entity);
+      delete entityRef.current.onInteracted;
+      remove(entityRef);
     };
   }, []);
 
   return () => {
-    const [position] = entity.position;
-    const iEntity = Object.values(entities).find((e) => {
-      if (e === entity) {
+    const [position] = entityRef.current.position;
+    const foundEntity = Object.values(entities).find((otherEntity) => {
+      if (
+        otherEntity === entityRef ||
+        !otherEntity.current?.position ||
+        !otherEntity.current?.body
+      ) {
         return;
       }
 
-      if (!e?.position || !e?.body) {
-        return false;
-      }
-
-      const [ePosition] = e?.position;
-      const [eBody] = e?.body;
+      const [ePosition] = otherEntity.current?.position;
+      const [eBody] = otherEntity.current?.body;
       const xMin = ePosition.x! - eBody.width! / 2;
       const xMax = ePosition.x! + eBody.width! / 2;
       const yMin = ePosition.y! - eBody.height! / 2;
@@ -173,10 +170,10 @@ export function useInteractSystem(callback?: (e: EntityId) => void) {
     });
 
     // nothing is there
-    if (!iEntity) {
+    if (!foundEntity) {
       return;
     }
 
-    iEntity.onInteracted(entity);
+    foundEntity.onInteracted(entityRef);
   };
 }

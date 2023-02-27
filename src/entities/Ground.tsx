@@ -2,20 +2,17 @@ import overworldImage from "../assets/Overworld.png";
 import { usePositionComponent } from "../library/Entity";
 import { SpriteCanvas } from "../library/Render";
 
-export default function Ground() {
-  const [position] = usePositionComponent({
-    x: 0,
-    y: 0,
-    z: 0,
-  });
-
-  const grassTiles: number[][] = [];
+interface GroundProps {
+  spriteIndex?: number;
+}
+export default function Ground({ spriteIndex }: GroundProps) {
+  const tiles: number[][] = [];
   for (let y = 0; y < 100; y++) {
-    if (!grassTiles[y]) {
-      grassTiles[y] = [];
+    if (!tiles[y]) {
+      tiles[y] = [];
     }
     for (let x = 0; x < 100; x++) {
-      grassTiles[y].push(0);
+      tiles[y].push(spriteIndex ?? 0);
     }
   }
   return (
@@ -25,7 +22,7 @@ export default function Ground() {
         width: 16,
         height: 16,
       }}
-      sprites={grassTiles}
+      sprites={tiles}
     />
   );
 }

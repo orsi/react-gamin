@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { CSSProperties, HTMLProps, useEffect, useRef, useState } from "react";
 
 export interface Sheet {
   width: number;
@@ -54,7 +54,7 @@ export function getSpriteStyles(
   return style;
 }
 
-export interface SpriteProps {
+export interface SpriteProps extends HTMLProps<HTMLElement> {
   alt?: string;
   src: string;
   x?: number;
@@ -75,6 +75,7 @@ export function Sprite({
   x,
   y,
   z,
+  ...props
 }: SpriteProps) {
   const [img, setImg] = useState<HTMLImageElement>();
   const [currentSprite, setCurrentSprite] = useState(selectedSprite ?? 0);
@@ -150,6 +151,7 @@ export function Sprite({
           width={sheet?.width ?? img.width}
           height={sheet?.height ?? img.height}
           alt={alt ?? `Sprite`}
+          {...props}
         />
       )}
     </>

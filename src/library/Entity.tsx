@@ -3,55 +3,49 @@ import {
   useId,
   useContext,
   useState,
-  ReactNode,
   useRef,
   PropsWithChildren,
+  forwardRef,
+  useImperativeHandle,
+  MutableRefObject,
+  useEffect,
 } from "react";
-import { ReactState } from "./Game";
+import { GameContext, ReactState } from "./Game";
 
-export interface EntityId {
+export interface IEntity {
   id: string;
 }
+export type EntityRef<T> = MutableRefObject<IEntity> & { current: T };
 
 export interface Component {}
 
 export type EntityWithComponent<
   K extends string,
   C extends Component
-> = EntityId & {
+> = IEntity & {
   [key in K]: ReactState<C>;
 };
 
 export const EntityContext =
-  createContext<null | React.MutableRefObject<EntityId>>(null);
+  createContext<null | React.MutableRefObject<IEntity>>(null);
 
-interface EntityProps extends PropsWithChildren {}
-export function Entity({ children }: EntityProps) {
-  const ref = useRef<EntityId>({
-    id: useId(),
-  });
-  return (
-    <EntityContext.Provider value={ref}>{children}</EntityContext.Provider>
-  );
+interface EntityProps extends PropsWithChildren {
+  id: string;
 }
+export const Entity = forwardRef<IEntity, EntityProps>(
+  ({ children, id }, ref) => {
+    const entityRef = useRef<IEntity>({
+      id,
+    });
+    useImperativeHandle(ref, () => entityRef.current);
 
-export interface Body {
-  solid?: boolean;
-  height?: number;
-  width?: number;
-}
-export function useBodyComponent(initialBody?: Partial<Body>) {
-  const state = useState<Body>({
-    solid: true,
-    width: 10,
-    height: 10,
-    ...initialBody,
-  });
-  const ref = useContext(EntityContext);
-  const entity = ref.current as EntityWithComponent<"body", Body>;
-  entity.body = state;
-  return state;
-}
+    return (
+      <EntityContext.Provider value={entityRef}>
+        {children}
+      </EntityContext.Provider>
+    );
+  }
+);
 
 export interface Position extends Component {
   x: number;
@@ -66,8 +60,31 @@ export function usePositionComponent(initialPosition?: Partial<Position>) {
     ...initialPosition,
   });
 
-  const ref = useContext(EntityContext);
-  const entity = ref.current as EntityWithComponent<"position", Position>;
-  entity.position = state;
+  const entityRef = useContext(EntityContext);
+  useEffect(() => {
+    entityRef.current.position = state;
+  }, []);
+
+  return state;
+}
+
+export interface Body {
+  solid?: boolean;
+  height?: number;
+  width?: number;
+}
+export function useBodyComponent(initialBody?: Partial<Body>) {
+  const state = useState<Body>({
+    solid: true,
+    width: 10,
+    height: 10,
+    ...initialBody,
+  });
+
+  const entityRef = useContext(EntityContext);
+  useEffect(() => {
+    entityRef.current.body = state;
+  }, []);
+
   return state;
 }

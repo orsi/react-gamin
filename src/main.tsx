@@ -18,7 +18,7 @@ function onRender(
 }
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <Profiler id="App" onRender={onRender}>
+    <Profiler name="App" onRender={onRender}>
       <App />
     </Profiler>
   </React.StrictMode>

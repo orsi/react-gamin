@@ -1,6 +1,6 @@
 import overworldImage from "../assets/Overworld.png";
 import {
-  EntityId,
+  IEntity,
   useBodyComponent,
   usePositionComponent,
 } from "../library/Entity";
@@ -26,7 +26,7 @@ export default function Box({ x, y, z, solid }: BoxProps) {
   });
 
   useMovementSystem();
-  useInteractSystem((e: EntityId) => {
+  useInteractSystem((e: IEntity) => {
     console.log("who's interacting me?", e);
   });
 
