@@ -98,3 +98,23 @@ export default function MiloChar() {
 # Contributing
 
 If you enjoy React and gaming, feel free to create an issue or pull request! All contributions are welcome.
+
+### Development
+
+First clone and install the project:
+
+```sh
+git clone git@github.com:orsi/react-gamin.git
+cd react-gamin
+npm i
+npm run dev
+
+VITE v4.1.4  ready in 215 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h to show help
+```
+
+The `npm run dev` script will start the vite server for the `/example` project on your localhost. This project can be used to experiment and create game features that utilize the main *react-gamin* library, which you can modify at `/packages/react-gamin/src`.
+
