@@ -257,8 +257,8 @@ export function SpriteCanvas({ src, sheet, sprites }: SpriteCanvasProps) {
           const spriteIndex = sprites[i][j];
           ctx.drawImage(
             image,
-            spriteIndex * sheet.width,
-            spriteIndex * sheet.height,
+            (spriteIndex % (image.width / sheet.width)) * sheet.width,
+            (spriteIndex / (image.width / sheet.width)) * sheet.height,
             sheet.width,
             sheet.height,
             offsetX,
