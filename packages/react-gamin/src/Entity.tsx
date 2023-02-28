@@ -29,23 +29,25 @@ export type EntityWithComponent<
 export const EntityContext =
   createContext<null | React.MutableRefObject<IEntity>>(null);
 
-interface EntityProps extends PropsWithChildren {
-  id: string;
-}
-export const Entity = forwardRef<IEntity, EntityProps>(
-  ({ children, id }, ref) => {
-    const entityRef = useRef<IEntity>({
-      id,
-    });
-    useImperativeHandle(ref, () => entityRef.current);
+interface EntityProps extends PropsWithChildren {}
+export const Entity = forwardRef<IEntity, EntityProps>(function Entity(
+  { children },
+  ref
+) {
+  const id = useId();
 
-    return (
-      <EntityContext.Provider value={entityRef}>
-        {children}
-      </EntityContext.Provider>
-    );
-  }
-);
+  const entityRef = useRef<IEntity>({
+    id,
+  });
+
+  useImperativeHandle(ref, () => entityRef.current);
+
+  return (
+    <EntityContext.Provider value={entityRef}>
+      {children}
+    </EntityContext.Provider>
+  );
+});
 
 export interface Position extends Component {
   x: number;

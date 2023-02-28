@@ -1,8 +1,17 @@
-import { Children, createContext, useContext, useState } from "react";
+import {
+  Children,
+  createContext,
+  forwardRef,
+  useContext,
+  useImperativeHandle,
+  useState,
+} from "react";
 import { Entity } from "./Entity";
 import { GameContext } from "./Game";
-import { useGameInput } from "./Input";
 
+export interface StageRef {
+  [key: string]: any;
+}
 interface Stage {
   [key: string]: any;
 }
@@ -11,7 +20,10 @@ interface StageProps {
   name: string;
   children?: JSX.Element | JSX.Element[];
 }
-export function Stage({ children, name: id }: StageProps) {
+export const Stage = forwardRef<StageRef, StageProps>(function Stage(
+  { children, name },
+  ref
+) {
   const game = useContext(GameContext);
 
   // rendering logic for dynamically adding and removing
@@ -55,6 +67,11 @@ export function Stage({ children, name: id }: StageProps) {
     setEntities(entities.filter((entity) => entity.id !== id));
   };
 
+  useImperativeHandle(ref, () => ({
+    addEntity,
+    removeEntity,
+  }));
+
   return (
     <StageContext.Provider
       value={{
@@ -65,7 +82,7 @@ export function Stage({ children, name: id }: StageProps) {
       {entities.map((entity) => entity.element)}
     </StageContext.Provider>
   );
-}
+});
 
 interface MissingStageProps {
   name?: string;

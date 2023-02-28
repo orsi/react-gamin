@@ -9,24 +9,71 @@ import {
   useRef,
   useImperativeHandle,
   Children,
+  useContext,
 } from "react";
-import { EntityRef } from "./Entity";
-import { GameInput } from "./Input";
 import { MissingStage } from "./Stage";
+
+const DEVELOPMENT_MODE = import.meta.env.MODE === "development";
 
 export type ReactState<S> = [S, Dispatch<SetStateAction<S>>];
 
 export interface GameState {
-  width: number;
-  height: number;
-  entities: Set<EntityRef<any>>;
+  entities?: Set<JSX.Element>;
   currentStage?: string;
   onStageChange?: (from: any, to: any) => void;
-  systems: (({ children }: { children?: React.ReactNode }) => JSX.Element)[];
+  systems?: (({ children }: { children?: React.ReactNode }) => JSX.Element)[];
   children?: React.ReactNode;
+  [key: string]: any;
 }
 
 export const GameContext = createContext<null | GameState>(null);
+
+interface GameProps extends PropsWithChildren {
+  currentStage?: string;
+  systems: (({ children }: PropsWithChildren) => JSX.Element)[];
+}
+export const Game = forwardRef<GameState, GameProps>(function Game(props, ref) {
+  const { children, currentStage, systems } = props;
+  const [entities, setEntities] = useState<JSX.Element[]>([]);
+
+  const CurrentStage = Children.toArray(children).find((child) => {
+    return child.props?.name === currentStage;
+  }) ?? <MissingStage name={currentStage} />;
+
+  // nest systems within each other so entire tree is contained
+  // in the systems
+  function wrapWithSystems(stage: JSX.Element) {
+    let systemsWrappedStage = <>{stage}</>;
+    for (let i = 0; i < systems.length; i++) {
+      const System = systems[i];
+      systemsWrappedStage = <System>{systemsWrappedStage}</System>;
+    }
+    return systemsWrappedStage;
+  }
+
+  // flag game has rendered
+  const [isRendered, setIsRendered] = useState(false);
+  useEffect(() => {
+    setIsRendered(true);
+  }, []);
+
+  // provide game context to forwardedRef
+  const gameContext = useRef({
+    ...props,
+    debug: DEVELOPMENT_MODE,
+  });
+  useImperativeHandle(ref, () => gameContext.current);
+
+  return (
+    <GameContext.Provider value={gameContext.current}>
+      {wrapWithSystems(CurrentStage as JSX.Element)}
+    </GameContext.Provider>
+  );
+});
+
+export function useGameContext() {
+  return useContext(GameContext);
+}
 
 const FPS = 60;
 const FRAME_MS = 1000 / FPS;
@@ -57,74 +104,3 @@ export function useLoop(callback: () => void, deps?: React.DependencyList) {
     return () => cancelAnimationFrame(frameId);
   }, [deps]);
 }
-
-interface GameProps extends PropsWithChildren {
-  currentStage?: string;
-  systems: (({ children }: PropsWithChildren) => JSX.Element)[];
-}
-export const Game = forwardRef<GameState, GameProps>((props, ref) => {
-  const { children, currentStage, systems } = props;
-  const [width, setWidth] = useState<number>();
-  const [height, setHeight] = useState<number>();
-
-  // function onWindowResize() {
-  //   const bounds = document.body.getBoundingClientRect();
-  //   setHeight(bounds.height);
-  //   setWidth(bounds.width);
-  // }
-
-  // useEffect(() => {
-  //   window.addEventListener("resize", onWindowResize);
-  //   onWindowResize();
-
-  //   return () => {
-  //     window.removeEventListener("resize", onWindowResize);
-  //   };
-  // }, []);
-
-  const gameContext = {
-    ...props,
-    width,
-    height,
-    entities: new Set<EntityRef<any>>(),
-  };
-
-  useImperativeHandle(ref, () => gameContext);
-
-  const [isRendered, setIsRendered] = useState(false);
-  useEffect(() => {
-    setIsRendered(true);
-  }, []);
-  const CurrentStage = Children.toArray(children).find((child) => {
-    return child.props?.name === currentStage;
-  }) ?? <MissingStage name={currentStage} />;
-
-  // nest systems within each other so entire tree is contained
-  // in the systems
-  const Systems = systems.reduce(
-    (AccSystems, System) =>
-      ({ children }: PropsWithChildren) =>
-        (
-          <AccSystems>
-            <System children={children} />
-          </AccSystems>
-        ),
-    ({ children }: PropsWithChildren) => <>{children}</>
-  );
-
-  return (
-    // <div
-    //   style={{
-    //     position: "relative",
-    //     height: height ?? `100vh`,
-    //     width: width ?? `100vw`,
-    //   }}
-    // >
-    <GameContext.Provider value={gameContext}>
-      <GameInput>
-        <Systems>{CurrentStage}</Systems>
-      </GameInput>
-    </GameContext.Provider>
-    // </div>
-  );
-});
