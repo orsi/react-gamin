@@ -1,12 +1,12 @@
-import overworldImage from "../assets/Overworld.png";
 import {
-  IEntity,
   useBodyComponent,
   usePositionComponent,
-} from "../library/Entity";
-import { MultiSprite } from "../library/Render";
-import { useInteractSystem, useMovementSystem } from "../library/System";
-
+  useMovementSystem,
+  useInteractSystem,
+  IEntity,
+  MultiSprite,
+} from "react-gamin";
+import overworldImage from "../assets/Overworld.png";
 interface HouseProps {
   x?: number;
   y?: number;
@@ -14,21 +14,21 @@ interface HouseProps {
   solid?: boolean;
 }
 export default function House({ x, y, z, solid }: HouseProps) {
-  const body = useBodyComponent({
+  const [body] = useBodyComponent({
     height: 80,
     width: 80,
     solid: solid ?? true,
   });
-  const [position] = usePositionComponent({
+  const [position, setPosition] = usePositionComponent({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,
   });
 
-  useMovementSystem();
-  useInteractSystem((e: IEntity) => {
-    console.log("who's interacting me?", e);
-  });
+  useMovementSystem(position, setPosition, body);
+  // useInteractSystem((e: IEntity) => {
+  //   console.log("who's interacting me?", e);
+  // });
 
   return (
     <MultiSprite

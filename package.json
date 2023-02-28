@@ -1,22 +1,37 @@
 {
-  "name": "react-gamin",
-  "private": true,
+  "name": "react-gamin--root",
   "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+  "description": "A rockin' React functional component library for games!",
+  "workspaces": [
+    "packages/react-gamin",
+    "example"
+  ],
+  "directories": {
+    "example": "example"
   },
-  "dependencies": {
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orsi/react-gamin.git"
+  },
+  "keywords": [
+    "react",
+    "game",
+    "gaming",
+    "functional"
+  ],
+  "author": "Jonathon Orsi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/orsi/react-gamin/issues"
+  },
+  "homepage": "https://github.com/orsi/react-gamin#readme",
+  "scripts": {
+    "dev": "npm run dev -w example",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.0.28",
-    "@types/react-dom": "^18.0.10",
-    "@vitejs/plugin-react-swc": "^3.0.0",
-    "typescript": "^4.9.3",
-    "vite": "^4.1.0"
   }
 }

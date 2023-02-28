@@ -7,11 +7,10 @@ import {
   SetStateAction,
   forwardRef,
   useRef,
-  MutableRefObject,
   useImperativeHandle,
   Children,
 } from "react";
-import { EntityRef, IEntity } from "./Entity";
+import { EntityRef } from "./Entity";
 import { GameInput } from "./Input";
 import { MissingStage } from "./Stage";
 
@@ -63,7 +62,7 @@ interface GameProps extends PropsWithChildren {
   currentStage?: string;
   systems: (({ children }: PropsWithChildren) => JSX.Element)[];
 }
-export default forwardRef<GameState, GameProps>((props, ref) => {
+export const Game = forwardRef<GameState, GameProps>((props, ref) => {
   const { children, currentStage, systems } = props;
   const [width, setWidth] = useState<number>();
   const [height, setHeight] = useState<number>();
@@ -91,7 +90,6 @@ export default forwardRef<GameState, GameProps>((props, ref) => {
   };
 
   useImperativeHandle(ref, () => gameContext);
-
 
   const [isRendered, setIsRendered] = useState(false);
   useEffect(() => {

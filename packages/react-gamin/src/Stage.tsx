@@ -1,15 +1,4 @@
-import {
-  Children,
-  createContext,
-  ReactPortal,
-  useCallback,
-  useContext,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
-import MiloChar from "../entities/MiloChar";
+import { Children, createContext, useContext, useState } from "react";
 import { Entity } from "./Entity";
 import { GameContext } from "./Game";
 import { useGameInput } from "./Input";
@@ -22,7 +11,7 @@ interface StageProps {
   name: string;
   children?: JSX.Element | JSX.Element[];
 }
-export default function Stage({ children, name: id }: StageProps) {
+export function Stage({ children, name: id }: StageProps) {
   const game = useContext(GameContext);
 
   // rendering logic for dynamically adding and removing
@@ -65,12 +54,6 @@ export default function Stage({ children, name: id }: StageProps) {
   const removeEntity = (id: string) => {
     setEntities(entities.filter((entity) => entity.id !== id));
   };
-
-  useGameInput((input) => {
-    if (input.KEYBOARD_SPACE) {
-      addEntity(<MiloChar x={Math.random() * 400} y={Math.random() * 400} />);
-    }
-  });
 
   return (
     <StageContext.Provider

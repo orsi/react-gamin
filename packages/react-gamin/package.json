@@ -1,0 +1,26 @@
+{
+  "name": "react-gamin",
+  "version": "0.0.0",
+  "author": "Jonathon Orsi",
+  "description": "A rockin' React functional component library for gamin'!",
+  "license": "ISC",
+  "main": "src/index.js",
+  "homepage": "https://github.com/orsi/react-gamin#readme",
+  "bugs": {
+    "url": "https://github.com/orsi/react-gamin/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orsi/react-gamin.git"
+  },
+  "keywords": [
+    "react",
+    "functional",
+    "game",
+    "gaming"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {}
+}

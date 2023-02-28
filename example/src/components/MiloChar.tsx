@@ -1,16 +1,15 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import npcImage from "../assets/npc.png";
-import { useGameInput } from "../library/Input";
-import { Sprite } from "../library/Render";
-import { useInteractSystem, useMovementSystem } from "../library/System";
+import { useContext, useRef, useState } from "react";
 import {
+  StageContext,
+  EntityContext,
   usePositionComponent,
   useBodyComponent,
-  EntityContext,
-} from "../library/Entity";
-import { useLoop } from "../library/Game";
-import { StageContext } from "../library/Stage";
-
+  useMovementSystem,
+  useGameInput,
+  useLoop,
+  Sprite,
+} from "react-gamin";
+import npcImage from "../assets/npc.png";
 interface MiloCharProps {
   x?: number;
   y?: number;

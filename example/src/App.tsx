@@ -1,13 +1,11 @@
-import Game from "./library/Game";
-import { MovementSystem, InteractSystem } from "./library/System";
+import { Game, InteractSystem, MovementSystem, Stage } from "react-gamin";
 import { useEffect, useRef, useState } from "react";
-import Stage from "./library/Stage";
-import Barrel from "./entities/Barrel";
-import Box from "./entities/Box";
-import Fountain from "./entities/Fountain";
-import Ground from "./entities/Ground";
-import House from "./entities/House";
-import MiloChar from "./entities/MiloChar";
+import Barrel from "./components/Barrel";
+import Box from "./components/Box";
+import Fountain from "./components/Fountain";
+import Ground from "./components/Ground";
+import House from "./components/House";
+import MiloChar from "./components/MiloChar";
 
 export default function App() {
   const ref = useRef();
@@ -22,7 +20,7 @@ export default function App() {
   }, []);
 
   return (
-    <div name="app" onClick={undefined}>
+    <div id="app" onClick={undefined}>
       <Game
         currentStage={currentStage}
         ref={ref}
