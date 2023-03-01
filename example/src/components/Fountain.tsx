@@ -1,6 +1,6 @@
 import {
-  useBodyComponent,
-  usePositionComponent,
+  useBody,
+  usePosition,
   useMovementSystem,
   useInteractSystem,
   IEntity,
@@ -14,12 +14,12 @@ interface FountainProps {
   solid?: boolean;
 }
 export default function Fountain({ x, y, z, solid }: FountainProps) {
-  const [body] = useBodyComponent({
+  const [body] = useBody({
     height: 48,
     width: 48,
     solid: solid ?? true,
   });
-  const [position, setPosition] = usePositionComponent({
+  const [position, setPosition] = usePosition({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,

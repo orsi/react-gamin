@@ -18,7 +18,6 @@ const DEVELOPMENT_MODE = import.meta.env.MODE === "development";
 export type ReactState<S> = [S, Dispatch<SetStateAction<S>>];
 
 export interface GameState {
-  entities?: Set<JSX.Element>;
   currentStage?: string;
   onStageChange?: (from: any, to: any) => void;
   systems?: (({ children }: { children?: React.ReactNode }) => JSX.Element)[];
@@ -34,7 +33,6 @@ interface GameProps extends PropsWithChildren {
 }
 export const Game = forwardRef<GameState, GameProps>(function Game(props, ref) {
   const { children, currentStage, systems } = props;
-  const [entities, setEntities] = useState<JSX.Element[]>([]);
 
   const CurrentStage = Children.toArray(children).find((child) => {
     return child.props?.name === currentStage;

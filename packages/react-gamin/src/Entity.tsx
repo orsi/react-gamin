@@ -2,7 +2,6 @@ import {
   createContext,
   useId,
   useContext,
-  useState,
   useRef,
   PropsWithChildren,
   forwardRef,
@@ -49,44 +48,6 @@ export const Entity = forwardRef<IEntity, EntityProps>(function Entity(
   );
 });
 
-export interface Position extends Component {
-  x: number;
-  y: number;
-  z: number;
-}
-export function usePositionComponent(initialPosition?: Partial<Position>) {
-  const state = useState<Position>({
-    x: 0,
-    y: 0,
-    z: 0,
-    ...initialPosition,
-  });
-
-  const entityRef = useContext(EntityContext);
-  useEffect(() => {
-    entityRef.current.position = state;
-  }, []);
-
-  return state;
-}
-
-export interface Body {
-  solid?: boolean;
-  height?: number;
-  width?: number;
-}
-export function useBodyComponent(initialBody?: Partial<Body>) {
-  const state = useState<Body>({
-    solid: true,
-    width: 10,
-    height: 10,
-    ...initialBody,
-  });
-
-  const entityRef = useContext(EntityContext);
-  useEffect(() => {
-    entityRef.current.body = state;
-  }, []);
-
-  return state;
+export function useEntityContext() {
+  return useContext(EntityContext);
 }

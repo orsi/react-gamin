@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   Dispatch,
   PropsWithChildren,
@@ -8,7 +8,8 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import { IEntity, EntityRef, Position, Body, EntityContext } from "./Entity";
+import { Position, Body } from "./Components";
+import { IEntity, EntityRef, EntityContext, useEntityContext } from "./Entity";
 
 const INPUT_TICK_MS = 1000 / 60;
 interface GameInput {
@@ -274,6 +275,11 @@ export function MovementSystem({ children }: PropsWithChildren) {
     </MovementSystemContext.Provider>
   );
 }
+
+export function useMovementSystemContext() {
+  return useContext(MovementSystemContext);
+}
+
 const SPEED = 2;
 type TDirection = "up" | "down" | "left" | "right";
 export function useMovementSystem(

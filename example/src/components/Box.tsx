@@ -1,6 +1,6 @@
 import {
-  useBodyComponent,
-  usePositionComponent,
+  useBody,
+  usePosition,
   useMovementSystem,
   useInteractSystem,
   IEntity,
@@ -15,12 +15,12 @@ interface BoxProps {
   solid?: boolean;
 }
 export default function Box({ x, y, z, solid }: BoxProps) {
-  const [body] = useBodyComponent({
+  const [body] = useBody({
     height: 32,
     width: 16,
     solid: solid ?? true,
   });
-  const [position, setPosition] = usePositionComponent({
+  const [position, setPosition] = usePosition({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,

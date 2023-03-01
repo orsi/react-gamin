@@ -54,7 +54,7 @@ export function getSpriteStyles(
   return style;
 }
 
-export interface SpriteProps extends HTMLProps<HTMLElement> {
+export interface SpriteProps extends HTMLProps<HTMLImageElement> {
   alt?: string;
   src: string;
   x?: number;
@@ -77,14 +77,14 @@ export function Sprite({
   z,
   ...props
 }: SpriteProps) {
-  const [img, setImg] = useState<HTMLImageElement>();
+  const [image, setImage] = useState<HTMLImageElement>();
   const [currentSprite, setCurrentSprite] = useState(selectedSprite ?? 0);
 
   useEffect(() => {
     const image = new Image();
     image.src = src;
     image.addEventListener("load", (e) => {
-      setImg(image);
+      setImage(image);
     });
   }, []);
 
@@ -136,7 +136,7 @@ export function Sprite({
     x,
     y,
     z,
-    img?.width,
+    image?.width,
     sheet?.width,
     sheet?.height,
     currentSprite
@@ -144,12 +144,12 @@ export function Sprite({
 
   return (
     <>
-      {img && (
+      {image && (
         <img
           style={style}
           src={src}
-          width={sheet?.width ?? img.width}
-          height={sheet?.height ?? img.height}
+          width={sheet?.width ?? image.width}
+          height={sheet?.height ?? image.height}
           alt={alt ?? `Sprite`}
           {...props}
         />

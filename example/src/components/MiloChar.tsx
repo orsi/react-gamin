@@ -1,13 +1,13 @@
-import { useContext, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  StageContext,
-  EntityContext,
-  usePositionComponent,
-  useBodyComponent,
+  usePosition,
+  useBody,
   useMovementSystem,
   useGameInput,
   useLoop,
   Sprite,
+  useEntityContext,
+  useStageContext,
 } from "react-gamin";
 import npcImage from "../assets/npc.png";
 interface MiloCharProps {
@@ -15,14 +15,14 @@ interface MiloCharProps {
   y?: number;
 }
 export default function MiloChar({ x, y }: MiloCharProps) {
-  const stage = useContext(StageContext);
-  const entity = useContext(EntityContext);
+  const stage = useStageContext();
+  const entity = useEntityContext();
   const [state, setState] = useState("idle");
-  const [position, setPosition] = usePositionComponent({
+  const [position, setPosition] = usePosition({
     x: x ?? 260,
     y: y ?? 200,
   });
-  const [body] = useBodyComponent({
+  const [body] = useBody({
     width: 16,
     height: 32,
     solid: true,

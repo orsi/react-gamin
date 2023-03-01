@@ -90,3 +90,7 @@ interface MissingStageProps {
 export function MissingStage({ name }: MissingStageProps) {
   return <h1 style={{ textAlign: "center" }}>Missing Stage "{name}"</h1>;
 }
+
+export function useStageContext() {
+  return useContext(StageContext);
+}

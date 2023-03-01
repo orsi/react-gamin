@@ -1,3 +1,4 @@
+export * from "./src/Components";
 export * from "./src/Entity";
 export * from "./src/Game";
 export * from "./src/Render";
