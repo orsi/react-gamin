@@ -2,8 +2,6 @@ import {
   useBody,
   usePosition,
   useMovementSystem,
-  useInteractSystem,
-  IEntity,
   MultiSprite,
 } from "react-gamin";
 import overworldImage from "../assets/Overworld.png";
@@ -26,9 +24,6 @@ export default function Fountain({ x, y, z, solid }: FountainProps) {
   });
 
   useMovementSystem(position, setPosition, body);
-  // useInteractSystem((e: IEntity) => {
-  //   console.log("who's interacting me?", e);
-  // });
 
   return (
     <MultiSprite

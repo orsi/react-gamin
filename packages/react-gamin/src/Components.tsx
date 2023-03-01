@@ -1,13 +1,38 @@
 import { useState, useEffect } from "react";
 import { useEntityContext } from "./Entity";
 
-export interface Component {}
-
-export interface Position extends Component {
+export type ComponentState<T extends IComponent> = [
+  T,
+  React.Dispatch<React.SetStateAction<T>>
+];
+export interface IComponent {}
+export interface Position extends IComponent {
   x: number;
   y: number;
   z: number;
 }
+
+export function useEntityWithComponent<T>(
+  component: string,
+  state: ComponentState<T>
+) {
+  const entityRef = useEntityContext();
+
+  useEffect(() => {
+    entityRef.current.components.set(component, state);
+    return () => {
+      entityRef.current.components.delete(component);
+    };
+  }, []);
+}
+
+export function getEntityComponent<T extends ComponentState<T>>(
+  component: string
+) {
+  const entityRef = useEntityContext();
+  return entityRef.current.components.get(component) as T | undefined;
+}
+
 export function usePosition(initialPosition?: Partial<Position>) {
   const state = useState<Position>({
     x: 0,
@@ -15,14 +40,8 @@ export function usePosition(initialPosition?: Partial<Position>) {
     z: 0,
     ...initialPosition,
   });
-  
-  const entityRef = useEntityContext();
-  useEffect(() => {
-    entityRef.current.position = state;
-    return () => {
-      delete entityRef.current.position;
-    };
-  }, []);
+
+  useEntityWithComponent("position", state);
 
   return state;
 }
@@ -40,13 +59,7 @@ export function useBody(initialBody?: Partial<Body>) {
     ...initialBody,
   });
 
-  const entityRef = useEntityContext();
-  useEffect(() => {
-    entityRef.current.body = state;
-    return () => {
-      delete entityRef.current.body;
-    };
-  }, []);
+  useEntityWithComponent("body", state);
 
   return state;
 }

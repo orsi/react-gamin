@@ -2,8 +2,7 @@ import {
   Game,
   InputSystem,
   GameState,
-  InteractSystem,
-  MovementSystem,
+  MovementSystemProvider,
   Stage,
   StageRef,
 } from "react-gamin";
@@ -50,7 +49,7 @@ export default function App() {
       <MiloChar x={120} y={500} />
     </Stage>,
   ];
-  const systems = [InputSystem, MovementSystem, InteractSystem];
+  const systems = [InputSystem, MovementSystemProvider];
 
   return (
     <div id="app">

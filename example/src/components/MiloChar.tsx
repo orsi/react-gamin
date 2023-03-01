@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   usePosition,
   useBody,
@@ -28,7 +28,6 @@ export default function MiloChar({ x, y }: MiloCharProps) {
     solid: true,
   });
   const move = useMovementSystem(position, setPosition, body);
-  // const interact = useInteractSystem(ref);
 
   useGameInput((input) => {
     if (input.KEYBOARD_UP || input.GAMEPAD_BUTTON_12) {
@@ -43,9 +42,9 @@ export default function MiloChar({ x, y }: MiloCharProps) {
       setState("idle");
     }
 
-    // if (input.KEYBOARD_SPACE) {
-    //   interact();
-    // }
+    if (input.KEYBOARD_SPACE) {
+      //
+    }
   });
 
   useLoop(() => {

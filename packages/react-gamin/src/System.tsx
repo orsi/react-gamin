@@ -9,7 +9,87 @@ import {
   useRef,
 } from "react";
 import { Position, Body } from "./Components";
-import { IEntity, EntityRef, EntityContext, useEntityContext } from "./Entity";
+import { EntityRef, useEntityContext } from "./Entity";
+
+interface ISystemContext {
+  get: () => EntityRef[];
+  add: (entity: EntityRef) => void;
+  remove: (entity: EntityRef) => void;
+}
+
+/**
+ * A utility function that returns:
+ *
+ *  1) A Context.Provider that the main <Game /> component can use to encapsulate all stages and entities
+ *  2) A custom hook that can be used by entities in the Game.
+ *
+ * Using this function will automatically add and remove entities that use the hook when they mount
+ * and unmount from the DOM.
+ *
+ * @param system A function that runs whenever an entity will use this system. The first argument 
+ * will be a ref to the entity trying to use the system, and the second argument will be all
+ * current entity refs that have been added to the system. Additional parameters
+ * can be added to require entities provide the system with the information it needs.
+ *
+ * @returns Systems can return anything they want to an entity: a function to call when
+ * they want to perform an action, a value, etc.
+ */
+export function createSystem<T extends unknown[], U>(
+  system: (entity: EntityRef, entities: EntityRef[], ...props: T) => U
+) {
+  const SystemContext = createContext<null | ISystemContext>(null);
+  const Provider = ({ children }: PropsWithChildren) => {
+    const entities = useRef(new Set<EntityRef>());
+
+    const get = () => [...entities.current];
+    const add = (entity: EntityRef) => {
+      entities.current.add(entity);
+    };
+    const remove = (entity: EntityRef) => {
+      entities.current.delete(entity);
+    };
+
+    return (
+      <SystemContext.Provider
+        value={{
+          get,
+          add,
+          remove,
+        }}
+      >
+        {children}
+      </SystemContext.Provider>
+    );
+  };
+
+  const useSystem = (...props: T) => {
+    // get entity and register to this system
+    const entityRef = useEntityContext();
+    const context = useContext(SystemContext);
+    if (!context) {
+      throw Error("System could not be found. Did you add it to your game?");
+    }
+    const { add, remove } = context;
+
+    useEffect(() => {
+      add(entityRef);
+      return () => {
+        remove(entityRef);
+      };
+    }, []);
+
+    // pass entity using system, all entities in system, and original
+    // props passed from entity to the system function
+    return system(entityRef, context.get(), ...props);
+  };
+
+  return {
+    Provider,
+    useSystem,
+  };
+}
+
+// Input System
 
 const INPUT_TICK_MS = 1000 / 60;
 interface GameInput {
@@ -255,53 +335,20 @@ export function useGameInput(callback: (input: GameInput) => void) {
   }, [callback]);
 }
 
-const MovementSystemContext = createContext<any>(null);
-export function MovementSystem({ children }: PropsWithChildren) {
-  const entities = useRef(new Set<EntityRef<any>>());
-
-  const get = () => [...entities.current];
-  const add = (entity: EntityRef<any>) => entities.current.add(entity);
-  const remove = (entity: EntityRef<any>) => {
-    entities.current.delete(entity);
-  };
-
-  return (
-    <MovementSystemContext.Provider
-      value={{
-        get,
-        add,
-        remove,
-      }}
-    >
-      {children}
-    </MovementSystemContext.Provider>
-  );
-}
-
-export function useMovementSystemContext() {
-  return useContext(MovementSystemContext);
-}
-
+// Movement System
 const SPEED = 2;
 type TDirection = "up" | "down" | "left" | "right";
-export function useMovementSystem(
+export const {
+  Provider: MovementSystemProvider,
+  useSystem: useMovementSystem,
+} = createSystem(function MovementSystemLogic(
+  entityRef: EntityRef,
+  entities: EntityRef[],
   position: Position,
   setPosition: Dispatch<SetStateAction<Position>>,
   body: Body
 ) {
-  const entityRef = useEntityContext();
-  const context = useMovementSystemContext();
-  const { get, add, remove } = context;
-  const entities = get() as EntityRef<any>[];
-
-  useEffect(() => {
-    add(entityRef);
-    return () => {
-      remove(entityRef);
-    };
-  }, []);
-
-  const move = (direction: TDirection) => {
+  return function move(direction: TDirection) {
     let nextPosition = {
       x: 0,
       y: 0,
@@ -319,16 +366,24 @@ export function useMovementSystem(
     const eYMax = nextPosition.y + body.height!;
 
     const foundEntity = [...entities].find((otherEntity) => {
+      const otherEntityPosition =
+        otherEntity.current.components.get("position");
+      const otherEntityBody = otherEntity.current.components.get("body");
       if (
         otherEntity === entityRef ||
-        !otherEntity.current.position ||
-        !otherEntity.current.body
+        !otherEntityPosition ||
+        !otherEntityBody
       ) {
         return false;
       }
 
-      const [ePosition] = otherEntity.current.position;
-      const [eBody] = otherEntity.current.body;
+      const [ePosition] = otherEntityPosition;
+      const [eBody] = otherEntityBody;
+
+      // if intersected entity is not solid, no need to calculate
+      if (!eBody.solid) {
+        return false;
+      }
 
       const e2XMin = ePosition.x;
       const e2XMax = ePosition.x + eBody.width!;
@@ -342,90 +397,11 @@ export function useMovementSystem(
       return inRange;
     });
 
-    // nothing is there
-    if (!foundEntity) {
-      setPosition(nextPosition);
-      return true;
-    }
-
-    // entity there is not solid
-    if (foundEntity && !foundEntity.current.body?.[0]?.solid) {
-      setPosition(nextPosition);
-      return true;
-    }
-
-    // nope
-    return false;
-  };
-
-  return move;
-}
-
-const InteractSystemContext = createContext<any>(null);
-export function InteractSystem({ children }: PropsWithChildren) {
-  const entities = useRef(new Set());
-
-  return (
-    <InteractSystemContext.Provider
-      value={{
-        get: () => [...entities.current],
-        add: (entity: IEntity) => entities.current.add(entity),
-        remove: (entity: IEntity) => entities.current.delete(entity),
-      }}
-    >
-      {children}
-    </InteractSystemContext.Provider>
-  );
-}
-
-export function useInteractSystem(callback?: () => void) {
-  const entityRef = useContext(EntityContext);
-  const context = useContext(InteractSystemContext);
-  if (!context) {
-    throw Error("System context not found. Did you create the system?");
-  }
-  const { get, add, remove } = context;
-  const entities = get() as EntityRef<any>[];
-
-  useEffect(() => {
-    entityRef.current.onInteracted = callback ?? function () {};
-    add(entityRef);
-    return () => {
-      delete entityRef.current.onInteracted;
-      remove(entityRef);
-    };
-  }, []);
-
-  return () => {
-    const [position] = entityRef.current.position;
-    const foundEntity = Object.values(entities).find((otherEntity) => {
-      if (
-        otherEntity === entityRef ||
-        !otherEntity.current?.position ||
-        !otherEntity.current?.body
-      ) {
-        return;
-      }
-
-      const [ePosition] = otherEntity.current?.position;
-      const [eBody] = otherEntity.current?.body;
-      const xMin = ePosition.x! - eBody.width! / 2;
-      const xMax = ePosition.x! + eBody.width! / 2;
-      const yMin = ePosition.y! - eBody.height! / 2;
-      const yMax = ePosition.y! + eBody.height! / 2;
-      const inRange =
-        position.x >= xMin &&
-        position.x <= xMax &&
-        position.y >= yMin &&
-        position.y <= yMax;
-      return inRange;
-    });
-
-    // nothing is there
-    if (!foundEntity) {
+    // in the way
+    if (foundEntity) {
       return;
     }
 
-    foundEntity.onInteracted(entityRef);
+    setPosition(nextPosition);
   };
-}
+});

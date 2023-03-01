@@ -1,9 +1,7 @@
 import overworldImage from "../assets/Overworld.png";
 import {
-  IEntity,
   MultiSprite,
   useBody,
-  useInteractSystem,
   useMovementSystem,
   usePosition,
 } from "react-gamin";
@@ -27,9 +25,6 @@ export default function Barrel({ x, y, z, solid }: BarrelProps) {
   });
 
   useMovementSystem(position, setPosition, body);
-  // useInteractSystem((e: IEntity) => {
-  //   console.log("who's interacting me?", e);
-  // });
 
   return (
     <MultiSprite
