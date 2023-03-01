@@ -4,7 +4,7 @@
   "author": "Jonathon Orsi",
   "description": "A rockin' React functional component library for gamin'!",
   "license": "ISC",
-  "main": "src/index.js",
+  "main": "index.tsx",
   "homepage": "https://github.com/orsi/react-gamin#readme",
   "bugs": {
     "url": "https://github.com/orsi/react-gamin/issues"
