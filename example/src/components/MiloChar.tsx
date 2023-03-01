@@ -81,10 +81,6 @@ export default function MiloChar({ x, y }: MiloCharProps) {
 
   return (
     <Sprite
-      onClick={() => {
-        console.log("click!", stage, entity.current.id);
-        stage.removeEntity(entity.current.id);
-      }}
       src={npcImage}
       x={position.x}
       y={position.y}

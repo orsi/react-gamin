@@ -261,7 +261,9 @@ export function MovementSystem({ children }: PropsWithChildren) {
 
   const get = () => [...entities.current];
   const add = (entity: EntityRef<any>) => entities.current.add(entity);
-  const remove = (entity: EntityRef<any>) => entities.current.delete(entity);
+  const remove = (entity: EntityRef<any>) => {
+    entities.current.delete(entity);
+  };
 
   return (
     <MovementSystemContext.Provider
@@ -287,14 +289,14 @@ export function useMovementSystem(
   setPosition: Dispatch<SetStateAction<Position>>,
   body: Body
 ) {
-  const entityRef = useContext(EntityContext);
-
-  const context = useContext(MovementSystemContext);
+  const entityRef = useEntityContext();
+  const context = useMovementSystemContext();
   const { get, add, remove } = context;
   const entities = get() as EntityRef<any>[];
+
   useEffect(() => {
     add(entityRef);
-    () => {
+    return () => {
       remove(entityRef);
     };
   }, []);
@@ -316,7 +318,7 @@ export function useMovementSystem(
     const eYMin = nextPosition.y;
     const eYMax = nextPosition.y + body.height!;
 
-    const foundEntity = Array.from(entities).find((otherEntity) => {
+    const foundEntity = [...entities].find((otherEntity) => {
       if (
         otherEntity === entityRef ||
         !otherEntity.current.position ||
@@ -388,7 +390,7 @@ export function useInteractSystem(callback?: () => void) {
   useEffect(() => {
     entityRef.current.onInteracted = callback ?? function () {};
     add(entityRef);
-    () => {
+    return () => {
       delete entityRef.current.onInteracted;
       remove(entityRef);
     };
