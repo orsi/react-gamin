@@ -3,11 +3,11 @@ import {
   usePosition,
   useBody,
   useMovementSystem,
-  useGameInput,
   useLoop,
   Sprite,
   useEntityContext,
   useStageContext,
+  useInputSystem,
 } from "react-gamin";
 import npcImage from "../assets/npc.png";
 interface MiloCharProps {
@@ -29,7 +29,7 @@ export default function MiloChar({ x, y }: MiloCharProps) {
   });
   const move = useMovementSystem(position, setPosition, body);
 
-  useGameInput((input) => {
+  useInputSystem((input) => {
     if (input.KEYBOARD_UP || input.GAMEPAD_BUTTON_12) {
       setState("walk-up");
     } else if (input.KEYBOARD_DOWN || input.GAMEPAD_BUTTON_13) {

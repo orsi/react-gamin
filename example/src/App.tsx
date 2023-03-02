@@ -1,7 +1,7 @@
 import {
   Game,
-  InputSystem,
   GameState,
+  InputSystemProvider,
   MovementSystemProvider,
   Stage,
   StageRef,
@@ -49,7 +49,7 @@ export default function App() {
       <MiloChar x={120} y={500} />
     </Stage>,
   ];
-  const systems = [InputSystem, MovementSystemProvider];
+  const systems = [InputSystemProvider, MovementSystemProvider];
 
   return (
     <div id="app">
