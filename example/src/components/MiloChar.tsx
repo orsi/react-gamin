@@ -2,12 +2,10 @@ import { useRef, useState } from "react";
 import {
   usePosition,
   useBody,
-  useMovementSystem,
-  useLoop,
+  useMove,
   Sprite,
-  useEntityContext,
-  useStageContext,
-  useInputSystem,
+  useAction,
+  useLoop,
 } from "react-gamin";
 import npcImage from "../assets/npc.png";
 interface MiloCharProps {
@@ -15,8 +13,7 @@ interface MiloCharProps {
   y?: number;
 }
 export default function MiloChar({ x, y }: MiloCharProps) {
-  const stage = useStageContext();
-  const entity = useEntityContext();
+  const lastStateRef = useRef("idle");
   const [state, setState] = useState("idle");
   const [position, setPosition] = usePosition({
     x: x ?? 260,
@@ -25,41 +22,39 @@ export default function MiloChar({ x, y }: MiloCharProps) {
   const [body] = useBody({
     width: 16,
     height: 32,
-    solid: true,
   });
-  const move = useMovementSystem(position, setPosition, body);
+  const move = useMove(setPosition, body);
+  const action = useAction();
 
-  useInputSystem((input) => {
-    if (input.KEYBOARD_UP || input.GAMEPAD_BUTTON_12) {
-      setState("walk-up");
-    } else if (input.KEYBOARD_DOWN || input.GAMEPAD_BUTTON_13) {
-      setState("walk-down");
-    } else if (input.KEYBOARD_LEFT || input.GAMEPAD_BUTTON_14) {
-      setState("walk-left");
-    } else if (input.KEYBOARD_RIGHT || input.GAMEPAD_BUTTON_15) {
-      setState("walk-right");
-    } else {
-      setState("idle");
-    }
+  useLoop(
+    (game) => {
+      const input = game.input.current;
+      if (input.KEYBOARD_UP || input.GAMEPAD_BUTTON_12) {
+        setState("walk-up");
+        move("up");
+      } else if (input.KEYBOARD_DOWN || input.GAMEPAD_BUTTON_13) {
+        setState("walk-down");
+        move("down");
+      } else if (input.KEYBOARD_LEFT || input.GAMEPAD_BUTTON_14) {
+        setState("walk-left");
+        move("left");
+      } else if (input.KEYBOARD_RIGHT || input.GAMEPAD_BUTTON_15) {
+        setState("walk-right");
+        move("right");
+      } else {
+        setState("idle");
+      }
 
-    if (input.KEYBOARD_SPACE) {
-      //
-    }
-  });
-
-  useLoop(() => {
-    if (state === "walk-up") {
-      move("up");
-    } else if (state === "walk-down") {
-      move("down");
-    } else if (state === "walk-left") {
-      move("left");
-    } else if (state === "walk-right") {
-      move("right");
-    } else {
-      // noop
-    }
-  }, [state]);
+      if (input.KEYBOARD_SPACE) {
+        action({
+          x: position.x,
+          y: position.y - 10,
+          z: position.z,
+        });
+      }
+    },
+    [position]
+  );
 
   const animations = useRef([
     { frameLength: 250, cells: [0, 1, 2, 3] },

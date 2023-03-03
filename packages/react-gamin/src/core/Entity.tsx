@@ -7,36 +7,46 @@ import {
   useImperativeHandle,
   MutableRefObject,
   ComponentState,
+  ReactNode,
+  useId,
 } from "react";
+import { useEntityInStage } from "./Stage";
 
-export interface IEntity {
-  id: string;
+export interface Entity {
+  id?: string;
+  type?: string;
   components: Map<string, ComponentState>;
+  element?: ReactNode;
 }
-export type EntityRef = MutableRefObject<IEntity>;
 
-export const EntityContext =
-  createContext<null | React.MutableRefObject<IEntity>>(null);
+export type EntityRef = MutableRefObject<Entity>;
+
+export const EntityContext = createContext<null | EntityRef>(null);
 
 interface EntityProps extends PropsWithChildren {
-  id: string;
+  type?: string;
 }
-export const Entity = forwardRef<IEntity, EntityProps>(function Entity(
-  { children, id },
-  ref
-) {
-  const entityRef = useRef<IEntity>({
-    id,
-    components: new Map(),
-  });
-  useImperativeHandle(ref, () => entityRef.current);
-  return (
-    <EntityContext.Provider value={entityRef}>
-      {children}
-    </EntityContext.Provider>
-  );
-});
+export const EntityContextProvider = forwardRef<Entity, EntityProps>(
+  function Entity({ children, type }, ref) {
+    const id = useId();
+    const entityRef = useRef<Entity>({
+      id,
+      type: type ?? "unknown",
+      components: new Map(),
+      element: children,
+    });
+    useImperativeHandle(ref, () => entityRef.current);
+
+    useEntityInStage(entityRef.current);
+
+    return (
+      <EntityContext.Provider value={entityRef}>
+        {children}
+      </EntityContext.Provider>
+    );
+  }
+);
 
 export function useEntityContext() {
-  return useContext(EntityContext);
+  return useContext(EntityContext).current;
 }

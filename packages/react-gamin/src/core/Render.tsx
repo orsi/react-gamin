@@ -81,6 +81,10 @@ export function Sprite({
   const [currentSprite, setCurrentSprite] = useState(selectedSprite ?? 0);
 
   useEffect(() => {
+    setCurrentSprite(selectedSprite);
+  }, [selectedSprite]);
+
+  useEffect(() => {
     const image = new Image();
     image.src = src;
     image.addEventListener("load", (e) => {

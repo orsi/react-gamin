@@ -29,7 +29,6 @@ export default function MiloChar() {
   const [body] = useBodyComponent({
     width: 16,
     height: 32,
-    solid: true,
   });
   const move = useMovementSystem(position, setPosition, body);
 

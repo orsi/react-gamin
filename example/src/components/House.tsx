@@ -1,29 +1,24 @@
-import {
-  useBody,
-  usePosition,
-  useMovementSystem,
-  MultiSprite,
-} from "react-gamin";
+import { useBody, usePosition, MultiSprite, useAction } from "react-gamin";
 import overworldImage from "../assets/Overworld.png";
 interface HouseProps {
   x?: number;
   y?: number;
   z?: number;
-  solid?: boolean;
 }
-export default function House({ x, y, z, solid }: HouseProps) {
-  const [body] = useBody({
+export default function House({ x, y, z }: HouseProps) {
+  useBody({
     height: 80,
     width: 80,
-    solid: solid ?? true,
   });
-  const [position, setPosition] = usePosition({
+  const [position] = usePosition({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,
   });
 
-  useMovementSystem(position, setPosition, body);
+  useAction(() => {
+    console.log("mah house!");
+  });
 
   return (
     <MultiSprite

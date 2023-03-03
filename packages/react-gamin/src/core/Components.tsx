@@ -16,12 +16,12 @@ export function useEntityWithComponent<T>(
   component: string,
   state: ComponentState<T>
 ) {
-  const entityRef = useEntityContext();
+  const entity = useEntityContext();
 
   useEffect(() => {
-    entityRef.current.components.set(component, state);
+    entity.components.set(component, state);
     return () => {
-      entityRef.current.components.delete(component);
+      entity.components.delete(component);
     };
   }, []);
 }
@@ -29,8 +29,8 @@ export function useEntityWithComponent<T>(
 export function getEntityComponent<T extends ComponentState<T>>(
   component: string
 ) {
-  const entityRef = useEntityContext();
-  return entityRef.current.components.get(component) as T | undefined;
+  const entity = useEntityContext();
+  return entity.components.get(component) as T | undefined;
 }
 
 export function usePosition(initialPosition?: Partial<Position>) {
@@ -46,14 +46,19 @@ export function usePosition(initialPosition?: Partial<Position>) {
   return state;
 }
 
+type RectangleBody = {
+  height?: number;
+  width?: number;
+};
+type PolyBody = {
+  lines: { x: number; y: number }[];
+};
 export interface Body {
-  solid?: boolean;
   height?: number;
   width?: number;
 }
 export function useBody(initialBody?: Partial<Body>) {
   const state = useState<Body>({
-    solid: true,
     width: 10,
     height: 10,
     ...initialBody,
