@@ -1,17 +1,15 @@
 import {
-  Children,
   createContext,
   forwardRef,
   MutableRefObject,
   PropsWithChildren,
-  ReactNode,
   useContext,
   useEffect,
   useId,
   useImperativeHandle,
   useRef,
 } from "react";
-import { Entity, EntityContextProvider } from "./Entity";
+import { Entity } from "./Entity";
 import { useEntityInGame } from "./Game";
 
 export type SystemRef = MutableRefObject<System>;

@@ -1,5 +1,6 @@
-import { useBody, usePosition, MultiSprite } from "react-gamin";
+import { MultiSprite } from "react-gamin";
 import overworldImage from "../assets/Overworld.png";
+import { useBody, usePosition } from "./Components";
 
 interface BoxProps {
   x?: number;

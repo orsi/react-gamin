@@ -1,5 +1,6 @@
 import overworldImage from "../assets/Overworld.png";
-import { MultiSprite, useBody, usePosition } from "react-gamin";
+import { MultiSprite } from "react-gamin";
+import { useBody, usePosition } from "./Components";
 
 interface BarrelProps {
   x?: number;

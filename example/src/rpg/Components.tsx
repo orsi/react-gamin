@@ -1,36 +1,10 @@
-import { useState, useEffect } from "react";
-import { useEntityContext } from "./Entity";
+import { useState } from "react";
+import { IComponent, useEntityWithComponent } from "react-gamin";
 
-export type ComponentState<T extends IComponent> = [
-  T,
-  React.Dispatch<React.SetStateAction<T>>
-];
-export interface IComponent {}
 export interface Position extends IComponent {
   x: number;
   y: number;
   z: number;
-}
-
-export function useEntityWithComponent<T>(
-  component: string,
-  state: ComponentState<T>
-) {
-  const entity = useEntityContext();
-
-  useEffect(() => {
-    entity.components.set(component, state);
-    return () => {
-      entity.components.delete(component);
-    };
-  }, []);
-}
-
-export function getEntityComponent<T extends ComponentState<T>>(
-  component: string
-) {
-  const entity = useEntityContext();
-  return entity.components.get(component) as T | undefined;
 }
 
 export function usePosition(initialPosition?: Partial<Position>) {

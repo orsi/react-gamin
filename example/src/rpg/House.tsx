@@ -1,5 +1,7 @@
-import { useBody, usePosition, MultiSprite, useAction } from "react-gamin";
+import { MultiSprite } from "react-gamin";
 import overworldImage from "../assets/Overworld.png";
+import { useBody, usePosition } from "./Components";
+import { useAction } from "./Systems";
 interface HouseProps {
   x?: number;
   y?: number;

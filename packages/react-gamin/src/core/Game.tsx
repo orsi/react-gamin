@@ -10,10 +10,9 @@ import {
   useContext,
   MutableRefObject,
   useState,
-  useCallback,
 } from "react";
 import { Entity } from "./Entity";
-import { GameInputState, Input as GameInput } from "./Input";
+import { GameInputState, useInputSystem } from "./Input";
 import { Stage } from "./Stage";
 import { System } from "./System";
 
@@ -37,19 +36,23 @@ export const GameContext = createContext<null | MutableRefObject<GameContext>>(
   null
 );
 
-interface GameProps extends PropsWithChildren {}
+interface GameProps extends PropsWithChildren {
+  aspectRatio?: string;
+  height?: string;
+  width?: string;
+}
 
 export const Game = forwardRef<GameContext, GameProps>(function Game(
   props,
   ref
 ) {
-  const { children } = props;
+  const { aspectRatio, children, height, width } = props;
 
   const [gameState, setGameState] = useState<ExecutionState>("setup");
 
   // every rendered component will register themselves
   // into these refs via the game context
-  const inputRef = useRef<GameInputState | any>();
+  const inputRef = useInputSystem();
   const gameContext = useRef<GameContext>({
     state: gameState,
     input: inputRef,
@@ -85,10 +88,24 @@ export const Game = forwardRef<GameContext, GameProps>(function Game(
   }, []);
 
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
-      <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>
+    <div
+      style={{
+        aspectRatio: aspectRatio ?? "4/3",
+        height,
+        margin: "0px auto",
+        overflow: "hidden",
+        width: width ?? "640px",
+      }}
+    >
+      <div
+        style={{
+          height: "100%",
+          position: "relative",
+          width: "100%",
+        }}
+      >
         <GameContext.Provider value={gameContext}>
-          <GameInput ref={inputRef}>{children}</GameInput>
+          {children}
         </GameContext.Provider>
       </div>
     </div>

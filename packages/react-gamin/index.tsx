@@ -1,4 +1,3 @@
-export * from "./src/core/Components";
 export * from "./src/core/Entity";
 export * from "./src/core/Game";
 export * from "./src/core/Render";

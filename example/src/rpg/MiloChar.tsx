@@ -1,13 +1,8 @@
 import { useRef, useState } from "react";
-import {
-  usePosition,
-  useBody,
-  useMove,
-  Sprite,
-  useAction,
-  useLoop,
-} from "react-gamin";
+import { Sprite, useLoop } from "react-gamin";
 import npcImage from "../assets/npc.png";
+import { usePosition, useBody } from "./Components";
+import { useAction, useMove } from "./Systems";
 interface MiloCharProps {
   x?: number;
   y?: number;
@@ -45,7 +40,10 @@ export default function MiloChar({ x, y }: MiloCharProps) {
         setState("idle");
       }
 
-      if (input.KEYBOARD_SPACE) {
+      if (
+        input.currentEvent?.type === "keydown" &&
+        input.currentEvent?.data === "Space"
+      ) {
         action({
           x: position.x,
           y: position.y - 10,

@@ -1,5 +1,6 @@
 import objectsImage from "../assets/objects.png";
-import { Sprite, usePosition } from "react-gamin";
+import { Sprite } from "react-gamin";
+import { usePosition } from "./Components";
 
 interface BarrelProps {
   x?: number;

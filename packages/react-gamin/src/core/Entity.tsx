@@ -6,16 +6,16 @@ import {
   forwardRef,
   useImperativeHandle,
   MutableRefObject,
-  ComponentState,
   ReactNode,
   useId,
+  useEffect,
 } from "react";
 import { useEntityInStage } from "./Stage";
 
 export interface Entity {
   id?: string;
   type?: string;
-  components: Map<string, ComponentState>;
+  components: Map<string, ComponentState<any>>;
   element?: ReactNode;
 }
 
@@ -49,4 +49,30 @@ export const EntityContextProvider = forwardRef<Entity, EntityProps>(
 
 export function useEntityContext() {
   return useContext(EntityContext).current;
+}
+
+export interface IComponent {}
+export type ComponentState<T extends IComponent> = [
+  T,
+  React.Dispatch<React.SetStateAction<T>>
+];
+export function useEntityWithComponent<T>(
+  component: string,
+  state: ComponentState<T>
+) {
+  const entity = useEntityContext();
+
+  useEffect(() => {
+    entity.components.set(component, state);
+    return () => {
+      entity.components.delete(component);
+    };
+  }, []);
+}
+
+export function getEntityComponent<T extends ComponentState<T>>(
+  component: string
+) {
+  const entity = useEntityContext();
+  return entity.components.get(component) as T | undefined;
 }
