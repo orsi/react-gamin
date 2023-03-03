@@ -10,6 +10,8 @@ import {
   useContext,
   MutableRefObject,
   useState,
+  useLayoutEffect,
+  CSSProperties,
 } from "react";
 import { Entity } from "./Entity";
 import { GameInputState, useInputSystem } from "./Input";
@@ -22,12 +24,14 @@ const FRAME_MS = 1000 / FPS;
 export type ReactState<S> = [S, Dispatch<SetStateAction<S>>];
 
 export interface GameContext {
-  state: ExecutionState;
-  input: MutableRefObject<GameInputState>;
   entities: Set<Entity>;
-  systems: Set<System>;
+  height: number;
+  input: MutableRefObject<GameInputState>;
   stages: Set<Stage>;
+  state: ExecutionState;
+  systems: Set<System>;
   loops: Set<Loop>;
+  width: number;
 }
 
 export type ExecutionState = "setup" | "running" | "paused";
@@ -40,13 +44,15 @@ interface GameProps extends PropsWithChildren {
   aspectRatio?: string;
   height?: string;
   width?: string;
+  style?: CSSProperties;
+  systems?: ((game: GameContext) => void)[];
 }
 
 export const Game = forwardRef<GameContext, GameProps>(function Game(
   props,
   ref
 ) {
-  const { aspectRatio, children, height, width } = props;
+  const { aspectRatio, children, height, style, systems, width } = props;
 
   const [gameState, setGameState] = useState<ExecutionState>("setup");
 
@@ -54,6 +60,8 @@ export const Game = forwardRef<GameContext, GameProps>(function Game(
   // into these refs via the game context
   const inputRef = useInputSystem();
   const gameContext = useRef<GameContext>({
+    height: 480,
+    width: 640,
     state: gameState,
     input: inputRef,
     entities: new Set(),
@@ -72,6 +80,11 @@ export const Game = forwardRef<GameContext, GameProps>(function Game(
     const update = (time: number) => {
       const delta = time - lastUpdateRef.current;
       if (delta > FRAME_MS) {
+        // run systems
+        systems?.forEach((fn) => {
+          fn(gameContext.current);
+        });
+
         [...gameContext.current.loops.values()].forEach((cb) => {
           cb(gameContext.current);
         });
@@ -87,14 +100,25 @@ export const Game = forwardRef<GameContext, GameProps>(function Game(
     };
   }, []);
 
+  const gameElementRef = useRef<HTMLDivElement>();
+  useLayoutEffect(() => {
+    if (gameElementRef.current) {
+      const rect = gameElementRef.current.getBoundingClientRect();
+      gameContext.current.height = rect.height;
+      gameContext.current.width = rect.width;
+    }
+  }, []);
+
   return (
     <div
+      ref={gameElementRef}
       style={{
         aspectRatio: aspectRatio ?? "4/3",
         height,
         margin: "0px auto",
         overflow: "hidden",
         width: width ?? "640px",
+        ...style,
       }}
     >
       <div
@@ -105,15 +129,24 @@ export const Game = forwardRef<GameContext, GameProps>(function Game(
         }}
       >
         <GameContext.Provider value={gameContext}>
-          {children}
+          {children ?? <NoGameChildren />}
         </GameContext.Provider>
       </div>
     </div>
   );
 });
 
+function NoGameChildren() {
+  return <div>No children</div>;
+}
+
 export function useGame() {
   return useContext(GameContext).current;
+}
+
+export function useInput() {
+  const game = useGame();
+  return game.input.current;
 }
 
 type Loop = (input?: GameContext) => void;

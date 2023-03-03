@@ -1,5 +1,5 @@
 import { NavLink, Route, Routes } from "react-router-dom";
-import Puzzle from "./puzzle";
+import Pong from "./pong";
 
 import RPG from "./rpg";
 
@@ -10,9 +10,9 @@ const routes = [
     element: <RPG />,
   },
   {
-    name: "Puzzle",
-    path: "/puzzle",
-    element: <Puzzle />,
+    name: "Pong",
+    path: "/pong",
+    element: <Pong />,
   },
 ];
 
