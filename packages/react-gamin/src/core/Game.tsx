@@ -12,6 +12,8 @@ import {
   useState,
   useLayoutEffect,
   CSSProperties,
+  useId,
+  useCallback,
 } from "react";
 import { Entity } from "./Entity";
 import { GameInputState, useInputSystem } from "./Input";
