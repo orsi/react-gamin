@@ -1,17 +1,20 @@
-import { MultiSprite } from "react-gamin";
 import overworldImage from "../assets/Overworld.png";
-import { useBody, usePosition } from "./Components";
+import {
+  MultiSprite,
+  useBodyComponent,
+  usePositionComponent,
+} from "react-gamin";
 interface FountainProps {
   x?: number;
   y?: number;
   z?: number;
 }
 export default function Fountain({ x, y, z }: FountainProps) {
-  useBody({
+  useBodyComponent({
     height: 48,
     width: 48,
   });
-  const [position] = usePosition({
+  const [position] = usePositionComponent({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,

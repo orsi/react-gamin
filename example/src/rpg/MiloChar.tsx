@@ -1,29 +1,32 @@
 import { useRef, useState } from "react";
-import { Sprite, useLoop } from "react-gamin";
+import {
+  Sprite,
+  useBodyComponent,
+  usePositionComponent,
+  useUpdate,
+} from "react-gamin";
 import npcImage from "../assets/npc.png";
-import { usePosition, useBody } from "./Components";
 import { useAction, useMove } from "./Systems";
 interface MiloCharProps {
   x?: number;
   y?: number;
 }
 export default function MiloChar({ x, y }: MiloCharProps) {
-  const lastStateRef = useRef("idle");
   const [state, setState] = useState("idle");
-  const [position, setPosition] = usePosition({
+  const [position] = usePositionComponent({
     x: x ?? 260,
     y: y ?? 200,
   });
-  const [body] = useBody({
+  const [body] = useBodyComponent({
     width: 16,
     height: 32,
   });
-  const move = useMove(setPosition, body);
+  const move = useMove();
   const action = useAction();
 
-  useLoop(
-    (game) => {
-      const input = game.input.current;
+  const isTriggered = useRef(false);
+  useUpdate(
+    (input) => {
       if (input.KEYBOARD_UP || input.GAMEPAD_BUTTON_12) {
         setState("walk-up");
         move("up");
@@ -37,21 +40,28 @@ export default function MiloChar({ x, y }: MiloCharProps) {
         setState("walk-right");
         move("right");
       } else {
-        setState("idle");
+        const lastDirection = state.split("-")[1];
+        setState(`idle${lastDirection ? `-${lastDirection}` : ``}`);
       }
 
-      if (
-        input.currentEvent?.type === "keydown" &&
-        input.currentEvent?.data === "Space"
-      ) {
-        action({
-          x: position.x,
-          y: position.y - 10,
-          z: position.z,
-        });
+      if (input.KEYBOARD_SPACE && !isTriggered.current) {
+        isTriggered.current = true;
+        let actPosition = { ...position };
+        if (state.indexOf("up") > 0) {
+          actPosition.y -= 5;
+        } else if (state.indexOf("down") > 0) {
+          actPosition.y += 5 + body.height;
+        } else if (state.indexOf("left") > 0) {
+          actPosition.x -= 5;
+        } else if (state.indexOf("right") > 0) {
+          actPosition.x += 5 + body.width;
+        }
+        action(actPosition);
+      } else if (!input.KEYBOARD_SPACE && isTriggered.current) {
+        isTriggered.current = false;
       }
     },
-    [position]
+    [body, position, state]
   );
 
   const animations = useRef([

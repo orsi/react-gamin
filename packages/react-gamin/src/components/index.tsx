@@ -1,16 +1,17 @@
 import { useState } from "react";
-import { GameContext, useGame, useLoop } from "../core/Game";
+import { GameStore, useGame, useUpdate } from "../core/ecs";
 
 export function GameDebugger() {
   const [isMinimized, setIsMinimized] = useState(false);
-  const [game, setGame] = useState<GameContext>(useGame());
+  const store = useGame();
+  const [game, setGame] = useState<GameStore>();
 
   const onToggle = () => {
     setIsMinimized(!isMinimized);
   };
 
-  useLoop((gameContext) => {
-    setGame({ ...gameContext });
+  useUpdate(() => {
+    setGame(store);
   });
 
   return (
@@ -45,7 +46,7 @@ export function GameDebugger() {
           padding: "8px",
         }}
       >
-        {game?.systems && (
+        {/* {game?.systems && (
           <>
             <h2>Systems</h2>
             <ul>
@@ -64,7 +65,7 @@ export function GameDebugger() {
               ))}
             </ul>
           </>
-        )}
+        )} */}
         <h2>Entities</h2>
         {game?.entities && (
           <ul>

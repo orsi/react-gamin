@@ -374,9 +374,9 @@ export const Entity = forwardRef<IEntity, IEntityProps>(function Entity(
   const get = (name: string) => {
     const component = entityRef.current._internal.components.get(name);
     if (!component) {
-      console.warn(
-        `Entity ${entityRef.current.id} does not have component ${name}`
-      );
+      // console.warn(
+      //   `Entity ${entityRef.current.id} does not have component ${name}`
+      // );
       return;
     }
 
@@ -387,9 +387,9 @@ export const Entity = forwardRef<IEntity, IEntityProps>(function Entity(
   const set = (name: string, data: any) => {
     const component = entityRef.current._internal.components.get(name);
     if (!component) {
-      console.warn(
-        `Entity ${entityRef.current.id} does not have component ${name}`
-      );
+      // console.warn(
+      //   `Entity ${entityRef.current.id} does not have component ${name}`
+      // );
       return;
     }
     const [, setState] = component;
@@ -437,8 +437,8 @@ export function useComponent<T>(name: string, data: T) {
   return state;
 }
 
-interface Component {}
-interface PositionComponent extends Component {
+export interface Component {}
+export interface PositionComponent extends Component {
   x: number;
   y: number;
   z: number;
@@ -455,7 +455,7 @@ export function usePositionComponent(
   return state;
 }
 
-interface VelocityComponent extends Component {
+export interface VelocityComponent extends Component {
   dx: number;
   dy: number;
   dz: number;
@@ -472,7 +472,7 @@ export function useVelocityComponent(
   return state;
 }
 
-interface BodyComponent extends Component {
+export interface BodyComponent extends Component {
   height: number;
   width: number;
 }

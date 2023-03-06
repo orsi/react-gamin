@@ -1,6 +1,9 @@
-import { MultiSprite } from "react-gamin";
+import {
+  MultiSprite,
+  useBodyComponent,
+  usePositionComponent,
+} from "react-gamin";
 import overworldImage from "../assets/Overworld.png";
-import { useBody, usePosition } from "./Components";
 
 interface BoxProps {
   x?: number;
@@ -8,11 +11,11 @@ interface BoxProps {
   z?: number;
 }
 export default function Box({ x, y, z }: BoxProps) {
-  useBody({
+  useBodyComponent({
     height: 32,
     width: 16,
   });
-  const [position] = usePosition({
+  const [position] = usePositionComponent({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,

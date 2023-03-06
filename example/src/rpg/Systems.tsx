@@ -2,19 +2,17 @@ import {
   createContext,
   PropsWithChildren,
   useRef,
-  Dispatch,
-  SetStateAction,
   useContext,
   useEffect,
+  useCallback,
 } from "react";
-import { Entity, useEntityContext, useGame } from "react-gamin";
-import { Position } from "./Components";
+import { IEntity, PositionComponent, useEntity, useGame } from "react-gamin";
 
 const SPEED = 2;
 type TDirection = "up" | "down" | "left" | "right";
 
 interface MoveSystemContext {
-  entities: Map<Entity, (actor?: Entity) => void | undefined>;
+  entities: Map<string, (actor?: IEntity) => void | undefined>;
 }
 export const MoveSystemContext = createContext<null | MoveSystemContext>(null);
 export function MoveSystem({ children }: PropsWithChildren) {
@@ -25,31 +23,29 @@ export function MoveSystem({ children }: PropsWithChildren) {
     </MoveSystemContext.Provider>
   );
 }
-export function useMove(
-  setter: Dispatch<SetStateAction<Position>>,
-  body: Body
-) {
-  const entity = useEntityContext();
-  const system = useContext(MoveSystemContext);
+export function useMove() {
   const game = useGame();
+  const system = useContext(MoveSystemContext);
+  const entity = useEntity();
 
   useEffect(() => {
-    system.entities.set(entity, undefined);
+    system.entities.set(entity.id, undefined);
     return () => {
-      system.entities.delete(entity);
+      system.entities.delete(entity.id);
     };
   }, []);
 
-  return function move(direction: TDirection) {
-    const movementEntities = [...game.entities?.values()].filter(
-      (gameEntity) => {
-        const hasPosition = gameEntity.components?.get("position");
-        const hasBody = gameEntity.components?.get("body");
-        return hasPosition && hasBody && gameEntity !== entity;
-      }
-    );
+  return useCallback(
+    (direction: TDirection) => {
+      const currentPosition = entity.get("position");
+      const currentBody = entity.get("body");
 
-    setter((currentPosition) => {
+      const movementEntities = [...game.entities].filter((e) => {
+        const hasPosition = e.get("position");
+        const hasBody = e.get("body");
+        return hasPosition && hasBody && e !== entity;
+      });
+
       let nextPosition = {
         x: 0,
         y: 0,
@@ -63,23 +59,16 @@ export function useMove(
       if (direction === "left") nextPosition.x = nextPosition.x - 1 * SPEED;
 
       const eXMin = nextPosition.x;
-      const eXMax = nextPosition.x + body.width!;
+      const eXMax = nextPosition.x + currentBody.width!;
       const eYMin = nextPosition.y;
-      const eYMax = nextPosition.y + body.height!;
+      const eYMax = nextPosition.y + currentBody.height!;
 
       const foundEntity = movementEntities.find((otherEntity) => {
-        const otherEntityPosition = otherEntity.components.get("position");
-        const otherEntityBody = otherEntity.components.get("body");
-        if (
-          otherEntity === entity ||
-          !otherEntityPosition ||
-          !otherEntityBody
-        ) {
+        const ePosition = otherEntity.get("position");
+        const eBody = otherEntity.get("body");
+        if (otherEntity === entity || !ePosition) {
           return false;
         }
-
-        const [ePosition] = otherEntityPosition;
-        const [eBody] = otherEntityBody;
 
         const e2XMin = ePosition.x;
         const e2XMax = ePosition.x + eBody.width!;
@@ -95,16 +84,17 @@ export function useMove(
 
       // in the way
       if (foundEntity) {
-        return currentPosition;
+        return;
       }
 
-      return nextPosition;
-    });
-  };
+      entity.set("position", nextPosition);
+    },
+    [game, system, entity]
+  );
 }
 
 interface ActionSystemContext {
-  entities: Map<Entity, (actor?: Entity) => void | undefined>;
+  entities: Map<string, (actor?: IEntity) => void | undefined>;
 }
 export const ActionSystemContext = createContext<null | ActionSystemContext>(
   null
@@ -118,44 +108,45 @@ export function ActionSystem({ children }: PropsWithChildren) {
   );
 }
 
-export function useAction(callback?: (actor?: Entity) => void) {
-  const systemContext = useContext(ActionSystemContext);
-  const entity = useEntityContext();
+export function useAction(callback?: (actor?: IEntity) => void) {
+  const game = useGame();
+  const system = useContext(ActionSystemContext);
+  const entity = useEntity();
 
   useEffect(() => {
-    systemContext.entities.set(entity, callback);
+    system.entities.set(entity.id, callback);
     return () => {
-      systemContext.entities.delete(entity);
+      system.entities.delete(entity.id);
     };
-  }, [callback]);
+  }, [callback, entity, system]);
 
-  return (at: Position) => {
-    const e2 = Array.from(systemContext.entities.keys()).find((otherEntity) => {
-      const otherEntityPosition = otherEntity.components.get("position");
-      const otherEntityBody = otherEntity.components.get("body");
-      if (otherEntity === entity || !otherEntityPosition || !otherEntityBody) {
-        return false;
+  return useCallback(
+    (at: PositionComponent) => {
+      const e2 = [...game.entities].find((e) => {
+        const ePosition = e.get("position");
+        const eBody = e.get("body");
+        if (e === entity || !ePosition) {
+          return false;
+        }
+
+        const e2XMin = ePosition.x;
+        const e2XMax = ePosition.x + (eBody?.width ?? 0);
+        const e2YMin = ePosition.y;
+        const e2YMax = ePosition.y + (eBody?.height ?? 0);
+        const inPosition =
+          at.x >= e2XMin && at.x <= e2XMax && at.y >= e2YMin && at.y <= e2YMax;
+        return inPosition;
+      });
+
+      if (!e2) {
+        return;
       }
 
-      const [ePosition] = otherEntityPosition;
-      const [eBody] = otherEntityBody;
-
-      const e2XMin = ePosition.x;
-      const e2XMax = ePosition.x + eBody.width!;
-      const e2YMin = ePosition.y;
-      const e2YMax = ePosition.y + eBody.height!;
-      const inPosition =
-        at.x >= e2XMin && at.x <= e2XMax && at.y >= e2YMin && at.y <= e2YMax;
-      return inPosition;
-    });
-
-    if (!e2) {
-      return;
-    }
-
-    const callback = systemContext.entities.get(e2);
-    if (callback) {
-      callback(entity);
-    }
-  };
+      const callback = system.entities.get(e2.id);
+      if (callback) {
+        callback(entity);
+      }
+    },
+    [game, system, entity]
+  );
 }

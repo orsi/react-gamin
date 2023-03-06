@@ -9,7 +9,7 @@ import {
   usePositionComponent,
   useUpdate,
   useVelocityComponent,
-} from "react-gamin/src/core/Experimental";
+} from "react-gamin";
 
 export default function Pong() {
   const startGame = () => {
