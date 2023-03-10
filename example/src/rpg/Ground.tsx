@@ -1,5 +1,5 @@
 import { SpriteCanvas } from "react-gamin";
-import overworldImage from "../assets/Overworld.png";
+import overworldImage from "./assets/Overworld.png";
 
 interface GroundProps {
   spriteIndex?: number;

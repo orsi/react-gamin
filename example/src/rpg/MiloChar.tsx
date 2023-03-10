@@ -5,7 +5,7 @@ import {
   usePositionComponent,
   useUpdate,
 } from "react-gamin";
-import npcImage from "../assets/npc.png";
+import npcImage from "./assets/npc.png";
 import { useAction, useMove } from "./Systems";
 interface MiloCharProps {
   x?: number;

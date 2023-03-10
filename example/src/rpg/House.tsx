@@ -3,7 +3,7 @@ import {
   useBodyComponent,
   usePositionComponent,
 } from "react-gamin";
-import overworldImage from "../assets/Overworld.png";
+import overworldImage from "./assets/Overworld.png";
 import { useAction } from "./Systems";
 interface HouseProps {
   x?: number;

@@ -1,4 +1,4 @@
-import overworldImage from "../assets/Overworld.png";
+import overworldImage from "./assets/Overworld.png";
 import {
   MultiSprite,
   useBodyComponent,

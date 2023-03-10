@@ -18,7 +18,7 @@ import {
   useLoop,
   Sprite,
 } from "react-gamin";
-import myCharacterSpriteSheet from "../assets/character.png";
+import myCharacterSpriteSheet from "./assets/character.png";
 
 export default function MiloChar() {
   const [state, setState] = useState("idle");

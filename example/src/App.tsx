@@ -5,14 +5,14 @@ import RPG from "./rpg";
 
 const routes = [
   {
-    name: "RPG",
+    name: "Pong",
     path: "/",
-    element: <RPG />,
+    element: <Pong />,
   },
   {
-    name: "Pong",
-    path: "/pong",
-    element: <Pong />,
+    name: "RPG",
+    path: "/rpg",
+    element: <RPG />,
   },
 ];
 

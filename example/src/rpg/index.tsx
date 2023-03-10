@@ -7,12 +7,11 @@ import MiloChar from "./MiloChar";
 import Chest from "./Chest";
 import Plant from "./Plant";
 import { ActionSystem, MoveSystem } from "./Systems";
-import { Game, Entity, GameDebugger } from "react-gamin";
+import { Game, Entity } from "react-gamin";
 
 export default function RPG() {
   return (
     <Game>
-      <GameDebugger />
       <ActionSystem>
         <MoveSystem>
           <Entity id="ground">
