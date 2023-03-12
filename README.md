@@ -11,7 +11,7 @@ Build your game declaratively with React functional components and state.
 ```tsx
 import { useRef, useState } from "react";
 import {
-  usePositionComponent,
+  useTransformComponent,
   useBodyComponent,
   useMovementSystem,
   useGameInput,
@@ -22,7 +22,7 @@ import myCharacterSpriteSheet from "./assets/character.png";
 
 export default function MiloChar() {
   const [state, setState] = useState("idle");
-  const [position, setPosition] = usePositionComponent({
+  const [position, setPosition] = useTransformComponent({
     x: 260,
     y: 200,
   });

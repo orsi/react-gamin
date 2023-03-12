@@ -14,28 +14,28 @@ export default function RPG() {
     <Game>
       <ActionSystem>
         <MoveSystem>
-          <Entity id="ground">
+          <Entity>
             <Ground spriteIndex={0} />
           </Entity>
-          <Entity id="box">
+          <Entity>
             <Box x={350} y={150} />
           </Entity>
-          <Entity id="barrel">
+          <Entity>
             <Barrel x={400} y={150} />
           </Entity>
-          <Entity id="house">
+          <Entity>
             <House x={300} y={200} />
           </Entity>
-          <Entity id="foundtain">
+          <Entity>
             <Fountain x={200} y={200} />
           </Entity>
-          <Entity id="chest">
+          <Entity>
             <Chest x={260} y={160} />
           </Entity>
-          <Entity id="plant">
+          <Entity>
             <Plant x={260} y={250} />
           </Entity>
-          <Entity id="player">
+          <Entity>
             <MiloChar />
           </Entity>
         </MoveSystem>

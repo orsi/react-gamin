@@ -2,9 +2,10 @@ import objectsImage from "./assets/objects.png";
 import { useState } from "react";
 import {
   Sprite,
-  IEntity,
+  EntityContext,
   useBodyComponent,
-  usePositionComponent,
+  useTransformComponent,
+  TransformComponent,
 } from "react-gamin";
 import { useAction } from "./Systems";
 
@@ -19,20 +20,21 @@ export default function Chest({ x, y, z }: BarrelProps) {
     height: 16,
     width: 16,
   });
-  const [position] = usePositionComponent({
+  const [position] = useTransformComponent({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,
   });
 
-  useAction((actor: IEntity) => {
+  useAction((actor: EntityContext) => {
     if (currentSprite === 0) {
       setCurrentSprite(1);
-      const position = actor.get("position");
+      const [position, setPosition] = actor.getComponent(TransformComponent);
       // blast back!
-      actor.set("position", {
+      setPosition({
         x: position.x,
         y: position.y + 10,
+        z: 0,
       });
     }
   });

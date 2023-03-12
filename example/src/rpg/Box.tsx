@@ -1,7 +1,7 @@
 import {
   MultiSprite,
   useBodyComponent,
-  usePositionComponent,
+  useTransformComponent,
 } from "react-gamin";
 import overworldImage from "./assets/Overworld.png";
 
@@ -15,7 +15,7 @@ export default function Box({ x, y, z }: BoxProps) {
     height: 32,
     width: 16,
   });
-  const [position] = usePositionComponent({
+  const [position] = useTransformComponent({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,

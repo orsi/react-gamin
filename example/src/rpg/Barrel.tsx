@@ -2,7 +2,7 @@ import overworldImage from "./assets/Overworld.png";
 import {
   MultiSprite,
   useBodyComponent,
-  usePositionComponent,
+  useTransformComponent,
 } from "react-gamin";
 
 interface BarrelProps {
@@ -15,7 +15,7 @@ export default function Barrel({ x, y, z }: BarrelProps) {
     height: 32,
     width: 16,
   });
-  const [position] = usePositionComponent({
+  const [position] = useTransformComponent({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,

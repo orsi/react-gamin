@@ -1,5 +1,5 @@
 import objectsImage from "./assets/objects.png";
-import { Sprite, usePositionComponent } from "react-gamin";
+import { Sprite, useTransformComponent } from "react-gamin";
 
 interface BarrelProps {
   x?: number;
@@ -7,7 +7,7 @@ interface BarrelProps {
   z?: number;
 }
 export default function Plant({ x, y, z }: BarrelProps) {
-  const [position] = usePositionComponent({
+  const [position] = useTransformComponent({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,

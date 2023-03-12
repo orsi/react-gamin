@@ -2,14 +2,21 @@ import { useRef, useState } from "react";
 import {
   Entity,
   Game,
-  IEntity,
+  EntityContext,
   useBodyComponent,
-  useComponent,
   useGame,
-  usePositionComponent,
+  useTransformComponent,
+  useSystem,
   useUpdate,
   useVelocityComponent,
+  useComponent,
+  BodyComponent,
+  TransformComponent,
+  VelocityComponent,
+  createComponent,
 } from "react-gamin";
+
+const ScoreComponent = createComponent<number>(0);
 
 export default function Pong() {
   const startGame = () => {
@@ -76,175 +83,187 @@ function EndScene({
 function PlayScene({ onGameOver }: { onGameOver?: (win: boolean) => void }) {
   const height = useGame((state) => state.height);
   const width = useGame((state) => state.width);
-  const playerScoreRef = useRef<IEntity>();
-  const opponentScoreRef = useRef<IEntity>();
-  const playerPaddleRef = useRef<IEntity>();
-  const opponentPaddleRef = useRef<IEntity>();
-  const dividerRef = useRef<IEntity>();
-  const ballRef = useRef<IEntity>();
+  const playerScoreRef = useRef<EntityContext>();
+  const opponentScoreRef = useRef<EntityContext>();
+  const playerPaddleRef = useRef<EntityContext>();
+  const opponentPaddleRef = useRef<EntityContext>();
+  const dividerRef = useRef<EntityContext>();
+  const ballRef = useRef<EntityContext>();
 
-  useUpdate((input, delta) => {
-    // pong game logic highly based off of:
-    // https://gist.github.com/straker/81b59eecf70da93af396f963596dfdc5
+  useSystem(
+    (entities, delta) => {
+      // pong game logic highly based off of:
+      // https://gist.github.com/straker/81b59eecf70da93af396f963596dfdc5
+      const [ballBody, setBallBody] =
+        ballRef.current.getComponent(BodyComponent);
+      const [ballTransform, setBallTransform] =
+        ballRef.current.getComponent(TransformComponent);
+      const [ballVelocity, setBallVelocity] =
+        ballRef.current.getComponent(VelocityComponent);
 
-    // BALL BOUNCING
-    if (
-      ballRef.current.get("position").y + ballRef.current.get("body").height >=
-      height
-    ) {
-      ballRef.current.set("velocity", {
-        x: ballRef.current.get("velocity").x,
-        y: -BALL_SPEED,
-      });
-    } else if (ballRef.current.get("position").y <= 0) {
-      ballRef.current.set("velocity", {
-        x: ballRef.current.get("velocity").x,
-        y: BALL_SPEED,
-      });
-    }
-    const newY =
-      ballRef.current.get("position").y + ballRef.current.get("velocity").y;
+      const [playerPaddlePosition, setPlayerPaddleTransform] =
+        playerPaddleRef.current.getComponent(TransformComponent);
+      const [playerPaddleBody] =
+        playerPaddleRef.current.getComponent(BodyComponent);
 
-    if (
-      ballRef.current.get("position").x + ballRef.current.get("body").width >=
-      width
-    ) {
-      ballRef.current.set("velocity", {
-        x: -BALL_SPEED,
-        y: ballRef.current.get("velocity").y,
-      });
-    } else if (ballRef.current.get("position").x <= 0) {
-      ballRef.current.set("velocity", {
-        x: BALL_SPEED,
-        y: ballRef.current.get("velocity").y,
-      });
-    }
-    const newX =
-      ballRef.current.get("position").x + ballRef.current.get("velocity").x;
-    ballRef.current.set("position", { x: newX, y: newY });
+      const [opponentPaddleTransform, setOpponentPaddleTransform] =
+        opponentPaddleRef.current.getComponent(TransformComponent);
+      const [opponentPaddleBody, setOpponentPaddleBody] =
+        opponentPaddleRef.current.getComponent(BodyComponent);
+      const [opponentPaddleVelocity, setOpponentPaddleVelocity] =
+        opponentPaddleRef.current.getComponent(VelocityComponent);
 
-    // SCORE
-    function resetBall(ball: IEntity) {
-      const newX = width / 2 - ball.get("body").width;
-      const newY = height / 2 - ball.get("body").height;
-      ball.set("position", { x: newX, y: newY });
-      const direction = Math.random() < 0.5 ? 1 : -1;
-      ball.set("velocity", {
-        x: BALL_SPEED * direction,
-        y: ball.get("velocity").y,
-      });
-    }
+      const [playerScore, setPlayerScore] =
+        playerScoreRef.current.getComponent(ScoreComponent);
+      const [opponentScore, setOpponentScore] =
+        opponentScoreRef.current.getComponent(ScoreComponent);
 
-    const currentPlayerScore = playerScoreRef.current.get("score");
-    const currentOpponentScore = opponentScoreRef.current.get("score");
-    if (
-      ballRef.current.get("position").x + ballRef.current.get("body").width >=
-      width
-    ) {
-      // player scores if hitting right wall
-      const newPlayerScore = currentPlayerScore + 1;
-      if (newPlayerScore < MAX_SCORE) {
-        playerScoreRef.current.set("score", newPlayerScore);
-        resetBall(ballRef.current);
-      } else {
-        // player won!
-        onGameOver(true);
+      // BALL BOUNCING
+      if (ballTransform.y + ballBody.height >= height) {
+        setBallVelocity({
+          dx: ballVelocity.dx,
+          dy: -BALL_SPEED,
+          dz: 0,
+        });
+      } else if (ballTransform.y <= 0) {
+        setBallVelocity({
+          dx: ballVelocity.dx,
+          dy: BALL_SPEED,
+          dz: 0,
+        });
       }
-    } else if (ballRef.current.get("position").x <= 0) {
-      // opponent scores if hitting left wall
-      const newOpponentScore = currentOpponentScore + 1;
-      if (newOpponentScore < 2) {
-        opponentScoreRef.current.set("score", newOpponentScore);
-        resetBall(ballRef.current);
-      } else {
-        // opponent won :()
-        onGameOver(false);
+      const newY = ballTransform.y + ballVelocity.dy;
+
+      if (ballTransform.x + ballBody.width >= width) {
+        setBallVelocity({
+          dx: -BALL_SPEED,
+          dy: ballVelocity.dy,
+          dz: 0,
+        });
+      } else if (ballTransform.x <= 0) {
+        setBallVelocity({
+          dx: BALL_SPEED,
+          dy: ballVelocity.dy,
+          dz: 0,
+        });
       }
-    }
+      const newX = ballTransform.x + ballVelocity.dx;
+      setBallTransform({ x: newX, y: newY, z: 0 });
 
-    // move opponent, and update if they hit walls
-    const opponentY =
-      opponentPaddleRef.current.get("position").y +
-      opponentPaddleRef.current.get("velocity").y;
-    opponentPaddleRef.current.set("position", {
-      x: opponentPaddleRef.current.get("position").x,
-      y: opponentY,
-    });
-    if (
-      opponentPaddleRef.current.get("position").y +
-        opponentPaddleRef.current.get("body").height >=
-      height
-    ) {
-      opponentPaddleRef.current.set("velocity", {
-        x: opponentPaddleRef.current.get("velocity").x,
-        y: -PADDLE_SPEED,
-      });
-    } else if (opponentPaddleRef.current.get("position").y <= 0) {
-      opponentPaddleRef.current.set("velocity", {
-        x: opponentPaddleRef.current.get("velocity").x,
-        y: PADDLE_SPEED,
-      });
-    }
+      // SCORE
+      function resetBall() {
+        const newX = width / 2 - ballBody.width;
+        const newY = height / 2 - ballBody.height;
+        setBallTransform({ x: newX, y: newY, z: 0 });
+        const direction = Math.random() < 0.5 ? 1 : -1;
+        setBallVelocity({
+          dx: BALL_SPEED * direction,
+          dy: ballVelocity.dy,
+          dz: 0,
+        });
+      }
 
-    function collides(obj1: IEntity, obj2: IEntity) {
-      const obj1Body = obj1.get("body");
-      const obj1Position = obj1.get("position");
-      const obj2Body = obj2.get("body");
-      const obj2Position = obj2.get("position");
-      return (
-        obj1Position.x < obj2Position.x + obj2Body.width &&
-        obj1Position.x + obj1Body.width > obj2Position.x &&
-        obj1Position.y < obj2Position.y + obj2Body.height &&
-        obj1Position.y + obj1Body.height > obj2Position.y
-      );
-    }
+      if (ballTransform.x + ballBody.width >= width) {
+        // player scores if hitting right wall
+        const newPlayerScore = playerScore + 1;
+        if (newPlayerScore < MAX_SCORE) {
+          setPlayerScore(newPlayerScore);
+          resetBall();
+        } else {
+          // player won!
+          onGameOver(true);
+        }
+      } else if (ballTransform.x <= 0) {
+        // opponent scores if hitting left wall
+        const newOpponentScore = opponentScore + 1;
+        if (newOpponentScore < 2) {
+          setOpponentScore(newOpponentScore);
+          resetBall();
+        } else {
+          // opponent won :()
+          onGameOver(false);
+        }
+      }
 
-    const ballVelocity = ballRef.current.get("velocity");
-    const ballPosition = ballRef.current.get("position");
-    const ballBody = ballRef.current.get("body");
-    const playerPosition = playerPaddleRef.current.get("position");
-    const playerBody = playerPaddleRef.current.get("body");
-    const opponentPosition = opponentPaddleRef.current.get("position");
-    if (collides(ballRef.current, playerPaddleRef.current)) {
-      ballRef.current.set("velocity", {
-        x: ballVelocity.x * -1,
-        y: ballVelocity.y,
+      // move opponent, and update if they hit walls
+      const opponentY = opponentPaddleTransform.y + opponentPaddleVelocity.dy;
+      setOpponentPaddleTransform({
+        x: opponentPaddleTransform.x,
+        y: opponentY,
+        z: 0,
       });
-      ballRef.current.set("position", {
-        x: playerPosition.x + playerBody.width,
-        y: ballPosition.y,
-      });
-    } else if (collides(ballRef.current, opponentPaddleRef.current)) {
-      ballRef.current.set("velocity", {
-        x: ballVelocity.x * -1,
-        y: ballVelocity.y,
-      });
+      if (opponentPaddleTransform.y + opponentPaddleBody.height >= height) {
+        setOpponentPaddleVelocity({
+          dx: opponentPaddleVelocity.dx,
+          dy: -PADDLE_SPEED,
+          dz: 0,
+        });
+      } else if (opponentPaddleTransform.y <= 0) {
+        setOpponentPaddleVelocity({
+          dx: opponentPaddleVelocity.dx,
+          dy: PADDLE_SPEED,
+          dz: 0,
+        });
+      }
 
-      ballRef.current.set("position", {
-        x: opponentPosition.x - ballBody.width,
-        y: ballPosition.y,
-      });
-    }
-  });
+      function collides(obj1: EntityContext, obj2: EntityContext) {
+        const [obj1Body] = obj1.getComponent(BodyComponent);
+        const [obj1Position] = obj1.getComponent(TransformComponent);
+        const [obj2Body] = obj2.getComponent(BodyComponent);
+        const [obj2Position] = obj2.getComponent(TransformComponent);
+        return (
+          obj1Position.x < obj2Position.x + obj2Body.width &&
+          obj1Position.x + obj1Body.width > obj2Position.x &&
+          obj1Position.y < obj2Position.y + obj2Body.height &&
+          obj1Position.y + obj1Body.height > obj2Position.y
+        );
+      }
+
+      if (collides(ballRef.current, playerPaddleRef.current)) {
+        setBallVelocity({
+          dx: ballVelocity.dx * -1,
+          dy: ballVelocity.dy,
+          dz: 0,
+        });
+        setBallTransform({
+          x: playerPaddlePosition.x + playerPaddleBody.width,
+          y: ballTransform.y,
+          z: 0,
+        });
+      } else if (collides(ballRef.current, opponentPaddleRef.current)) {
+        setBallVelocity({
+          dx: ballVelocity.dx * -1,
+          dy: ballVelocity.dy,
+          dz: 0,
+        });
+        setBallTransform({
+          x: opponentPaddleTransform.x - ballBody.width,
+          y: ballTransform.y,
+          z: 0,
+        });
+      }
+    },
+    [BodyComponent, TransformComponent, VelocityComponent]
+  );
 
   return (
     <>
-      <Entity id="player-score" ref={playerScoreRef}>
+      <Entity ref={playerScoreRef}>
         <Score x={24} />
       </Entity>
-      <Entity id="opponent-score" ref={opponentScoreRef}>
+      <Entity ref={opponentScoreRef}>
         <Score x={width - 24} />
       </Entity>
-      <Entity id="player" ref={playerPaddleRef}>
+      <Entity ref={playerPaddleRef}>
         <PlayerPaddle />
       </Entity>
-      <Entity id="opponent" ref={opponentPaddleRef}>
+      <Entity ref={opponentPaddleRef}>
         <OpponentPaddle />
       </Entity>
-      <Entity id="divider" ref={dividerRef}>
+      <Entity ref={dividerRef}>
         <Divider />
       </Entity>
-      <Entity id="ball" ref={ballRef}>
+      <Entity ref={ballRef}>
         <Ball />
       </Entity>
     </>
@@ -252,7 +271,7 @@ function PlayScene({ onGameOver }: { onGameOver?: (win: boolean) => void }) {
 }
 
 function Score({ x }: { x: number }) {
-  const [score] = useComponent("score", 0);
+  const [score] = useComponent(ScoreComponent, 0);
   return (
     <div
       style={{
@@ -290,13 +309,15 @@ function PlayerPaddle() {
     width: 15,
     height: 100,
   });
-  const [position, setPosition] = usePositionComponent({
+  const [position, setPosition] = useTransformComponent({
     x: 30,
     y: height / 2 - 50,
+    z: 0,
   });
   const [velocity] = useVelocityComponent({
     dx: PADDLE_SPEED,
     dy: PADDLE_SPEED,
+    dz: 0,
   });
 
   useUpdate(
@@ -343,13 +364,15 @@ function OpponentPaddle() {
     width: 15,
     height: 100,
   });
-  const [position] = usePositionComponent({
+  const [position] = useTransformComponent({
     x: width - 30,
     y: height / 2 - 50,
+    z: 0,
   });
   const [velocity] = useVelocityComponent({
     dx: PADDLE_SPEED,
     dy: PADDLE_SPEED,
+    dz: 0,
   });
 
   return (
@@ -370,15 +393,17 @@ function OpponentPaddle() {
 function Ball() {
   const height = useGame((state) => state.height);
   const width = useGame((state) => state.width);
-  const [position] = useComponent("position", {
+  const [position] = useTransformComponent({
     x: width / 2 - 25,
     y: height / 2 - 25,
+    z: 0,
   });
-  const velocity = useComponent("velocity", {
-    x: BALL_SPEED,
-    y: BALL_SPEED,
+  const velocity = useVelocityComponent({
+    dx: BALL_SPEED,
+    dy: BALL_SPEED,
+    dz: 0,
   });
-  const [body] = useComponent("body", {
+  const [body] = useBodyComponent({
     width: 25,
     height: 25,
   });

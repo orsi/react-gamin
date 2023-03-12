@@ -1,7 +1,7 @@
 import {
   MultiSprite,
   useBodyComponent,
-  usePositionComponent,
+  useTransformComponent,
 } from "react-gamin";
 import overworldImage from "./assets/Overworld.png";
 import { useAction } from "./Systems";
@@ -15,7 +15,7 @@ export default function House({ x, y, z }: HouseProps) {
     height: 80,
     width: 80,
   });
-  const [position] = usePositionComponent({
+  const [position] = useTransformComponent({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,

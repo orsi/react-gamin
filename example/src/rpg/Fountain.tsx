@@ -2,7 +2,7 @@ import overworldImage from "./assets/Overworld.png";
 import {
   MultiSprite,
   useBodyComponent,
-  usePositionComponent,
+  useTransformComponent,
 } from "react-gamin";
 interface FountainProps {
   x?: number;
@@ -14,7 +14,7 @@ export default function Fountain({ x, y, z }: FountainProps) {
     height: 48,
     width: 48,
   });
-  const [position] = usePositionComponent({
+  const [position] = useTransformComponent({
     x: x ?? 240,
     y: y ?? 240,
     z: z ?? 0,

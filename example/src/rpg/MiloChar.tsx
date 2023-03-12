@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import {
   Sprite,
   useBodyComponent,
-  usePositionComponent,
+  useTransformComponent,
   useUpdate,
 } from "react-gamin";
 import npcImage from "./assets/npc.png";
@@ -13,9 +13,10 @@ interface MiloCharProps {
 }
 export default function MiloChar({ x, y }: MiloCharProps) {
   const [state, setState] = useState("idle");
-  const [position] = usePositionComponent({
+  const [position] = useTransformComponent({
     x: x ?? 260,
     y: y ?? 200,
+    z: 0,
   });
   const [body] = useBodyComponent({
     width: 16,

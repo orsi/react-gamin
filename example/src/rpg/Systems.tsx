@@ -6,13 +6,20 @@ import {
   useEffect,
   useCallback,
 } from "react";
-import { IEntity, PositionComponent, useEntity, useGame } from "react-gamin";
+import {
+  BodyComponent,
+  EntityContext,
+  Transform,
+  TransformComponent,
+  useEntity,
+  useGame,
+} from "react-gamin";
 
 const SPEED = 2;
 type TDirection = "up" | "down" | "left" | "right";
 
 interface MoveSystemContext {
-  entities: Map<string, (actor?: IEntity) => void | undefined>;
+  entities: Map<string, (actor?: EntityContext) => void | undefined>;
 }
 export const MoveSystemContext = createContext<null | MoveSystemContext>(null);
 export function MoveSystem({ children }: PropsWithChildren) {
@@ -29,22 +36,25 @@ export function useMove() {
   const entity = useEntity();
 
   useEffect(() => {
-    system.entities.set(entity.id, undefined);
+    system.entities.set(entity._id, undefined);
     return () => {
-      system.entities.delete(entity.id);
+      system.entities.delete(entity._id);
     };
   }, []);
 
   return useCallback(
     (direction: TDirection) => {
-      const currentPosition = entity.get("position");
-      const currentBody = entity.get("body");
+      const [currentPosition, setPosition] =
+        entity.getComponent(TransformComponent);
+      const [currentBody] = entity.getComponent(BodyComponent);
 
-      const movementEntities = [...game.entities].filter((e) => {
-        const hasPosition = e.get("position");
-        const hasBody = e.get("body");
-        return hasPosition && hasBody && e !== entity;
-      });
+      const movementEntities = game
+        .getEntitiesWithComponents(TransformComponent, BodyComponent)
+        .filter((e) => {
+          const hasPosition = e.getComponent(TransformComponent);
+          const hasBody = e.getComponent(BodyComponent);
+          return hasPosition && hasBody && e !== entity;
+        });
 
       let nextPosition = {
         x: 0,
@@ -64,8 +74,8 @@ export function useMove() {
       const eYMax = nextPosition.y + currentBody.height!;
 
       const foundEntity = movementEntities.find((otherEntity) => {
-        const ePosition = otherEntity.get("position");
-        const eBody = otherEntity.get("body");
+        const [ePosition] = otherEntity.getComponent(TransformComponent);
+        const [eBody] = otherEntity.getComponent(BodyComponent);
         if (otherEntity === entity || !ePosition) {
           return false;
         }
@@ -87,14 +97,14 @@ export function useMove() {
         return;
       }
 
-      entity.set("position", nextPosition);
+      setPosition(nextPosition);
     },
     [game, system, entity]
   );
 }
 
 interface ActionSystemContext {
-  entities: Map<string, (actor?: IEntity) => void | undefined>;
+  entities: Map<string, (actor?: EntityContext) => void | undefined>;
 }
 export const ActionSystemContext = createContext<null | ActionSystemContext>(
   null
@@ -108,41 +118,46 @@ export function ActionSystem({ children }: PropsWithChildren) {
   );
 }
 
-export function useAction(callback?: (actor?: IEntity) => void) {
+export function useAction(callback?: (actor?: EntityContext) => void) {
   const game = useGame();
   const system = useContext(ActionSystemContext);
   const entity = useEntity();
 
   useEffect(() => {
-    system.entities.set(entity.id, callback);
+    system.entities.set(entity._id, callback);
     return () => {
-      system.entities.delete(entity.id);
+      system.entities.delete(entity._id);
     };
   }, [callback, entity, system]);
 
   return useCallback(
-    (at: PositionComponent) => {
-      const e2 = [...game.entities].find((e) => {
-        const ePosition = e.get("position");
-        const eBody = e.get("body");
-        if (e === entity || !ePosition) {
-          return false;
-        }
+    (at: Transform) => {
+      const e2 = game
+        .getEntitiesWithComponents(TransformComponent, BodyComponent)
+        .find((e) => {
+          const [ePosition] = e.getComponent(TransformComponent);
+          const [eBody] = e.getComponent(BodyComponent);
+          if (e === entity || !ePosition) {
+            return false;
+          }
 
-        const e2XMin = ePosition.x;
-        const e2XMax = ePosition.x + (eBody?.width ?? 0);
-        const e2YMin = ePosition.y;
-        const e2YMax = ePosition.y + (eBody?.height ?? 0);
-        const inPosition =
-          at.x >= e2XMin && at.x <= e2XMax && at.y >= e2YMin && at.y <= e2YMax;
-        return inPosition;
-      });
+          const e2XMin = ePosition.x;
+          const e2XMax = ePosition.x + (eBody?.width ?? 0);
+          const e2YMin = ePosition.y;
+          const e2YMax = ePosition.y + (eBody?.height ?? 0);
+          const inPosition =
+            at.x >= e2XMin &&
+            at.x <= e2XMax &&
+            at.y >= e2YMin &&
+            at.y <= e2YMax;
+          return inPosition;
+        });
 
       if (!e2) {
         return;
       }
 
-      const callback = system.entities.get(e2.id);
+      const callback = system.entities.get(e2._id);
       if (callback) {
         callback(entity);
       }

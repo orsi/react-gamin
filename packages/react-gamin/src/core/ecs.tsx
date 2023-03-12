@@ -11,7 +11,6 @@ import {
   useSyncExternalStore,
   useCallback,
   Dispatch,
-  SetStateAction,
   forwardRef,
   useImperativeHandle,
 } from "react";
@@ -47,38 +46,57 @@ function createStore<A>(initialState: A) {
 }
 
 const initialGameState: GameStore = {
-  height: 480,
-  width: 640,
-  input: null,
-  updateSubscribers: new Set(),
   entities: new Set(),
+  getEntitiesWithComponents: () => [],
+  height: 480,
+  input: null,
+  systems: [],
+  updates: new Set(),
+  width: 640,
 };
+
 export type GameStore = {
+  entities: Set<EntityContext>;
+  getEntitiesWithComponents: (...components: Comp<any>[]) => EntityWith<any>[];
   height: number;
-  width: number;
   input: InputState;
-  updateSubscribers: Set<UpdateSubscriber>;
-  entities: Set<IEntity>;
+  systems: SystemSubscriber[];
+  updates: Set<UpdateSubscriber>;
+  width: number;
 };
 export const GameContext = createContext<null | Store<GameStore>>(null);
+console.log(GameContext);
 interface GameProps extends PropsWithChildren {
   aspectRatio?: string;
   fps?: number;
   style?: CSSProperties;
+  width?: number;
+  height?: number;
 }
 export function Game(props: GameProps) {
-  const { aspectRatio, children, fps, style } = props;
+  const { aspectRatio, children, fps, height, style, width } = props;
 
   const FRAME_MS = 1000 / (fps ?? 60);
-  const [height, setHeight] = useState(480);
-  const [width, setWidth] = useState(640);
+  const [gameHeight, setHeight] = useState(height ?? 480);
+  const [gameWidth, setWidth] = useState(width ?? 640);
+
+  const getEntitiesWithComponents = (...components: Comp<any>[]) => {
+    const entities = [...store.get().entities]?.filter((entity) => {
+      const hasComponent = components?.every((value) =>
+        entity.components.has(value._symbol)
+      );
+      return hasComponent;
+    });
+    return entities;
+  };
 
   const input = useInputSystem();
   const store = createStore<GameStore>({
     ...initialGameState,
-    height,
-    width,
+    height: gameHeight,
+    width: gameWidth,
     input: input.current,
+    getEntitiesWithComponents: getEntitiesWithComponents,
   });
   // every rendered component will register themselves
   // into these refs via the game context
@@ -97,9 +115,24 @@ export function Game(props: GameProps) {
       // loop can run, we allow the ability to catch up if the updates took
       // longer for some reason.
       while (accumulator > FRAME_MS && ticks < 5) {
-        [...store.get().updateSubscribers].forEach((subscriber) => {
+        // update systems
+
+        store.get().systems.forEach((system) => {
+          // pass only entities that have the components the system wants
+          const entities = [...store.get().entities].filter((entity) => {
+            const hasComponent = system.components?.every((value) =>
+              entity.components.has(value._symbol)
+            );
+            return hasComponent;
+          });
+          system.run(entities as EntityWith<any>[], FRAME_MS);
+        });
+
+        // update entities
+        [...store.get().updates].forEach((subscriber) => {
           subscriber(store.get().input, FRAME_MS);
         });
+
         ticks++;
         accumulator -= FRAME_MS;
         lastUpdate = time;
@@ -125,6 +158,7 @@ export function Game(props: GameProps) {
 
   return (
     <div
+      id="react-gamin-container"
       ref={gameElementRef}
       style={{
         aspectRatio: aspectRatio ?? "4/3",
@@ -136,6 +170,7 @@ export function Game(props: GameProps) {
       }}
     >
       <div
+        id="react-gamin"
         style={{
           height: "100%",
           position: "relative",
@@ -175,7 +210,6 @@ export function useGameStore() {
   return store;
 }
 
-type UpdateSubscriber = (input: InputState, delta: number) => void;
 const initialInputState = {
   KEYBOARD_UP: false,
   KEYBOARD_DOWN: false,
@@ -320,91 +354,37 @@ export function useInputSystem() {
   return inputRef;
 }
 
-export function useUpdate(
-  callback: UpdateSubscriber,
-  dependencies?: unknown[]
-) {
-  const store = useGameStore();
-  const memoCallback = useCallback(callback, [dependencies]);
-
-  useEffect(() => {
-    store.get().updateSubscribers.add(memoCallback);
-    return () => {
-      store.get().updateSubscribers.delete(memoCallback);
-    };
-  }, [callback, store]);
+export const EntityContext = createContext<EntityContext>(null);
+export interface EntityContext {
+  _id: string;
+  components: Map<symbol, [any, Dispatch<any>]>;
+  getComponent: <T>(component: Comp<T>) => [T, Dispatch<T>];
 }
-
-export function useInputOn(
-  event: string,
-  callback: UpdateSubscriber,
-  dependencies?: unknown[]
-) {
-  const store = useGameStore();
-  const memoCallback = useCallback(callback, [dependencies]);
-
-  useEffect(() => {
-    store.get().updateSubscribers.add(memoCallback);
-    return () => {
-      store.get().updateSubscribers.delete(memoCallback);
-    };
-  }, [callback, store]);
-}
-
-export const EntityContext = createContext<IEntity>(null);
-export interface IEntity {
-  _internal: {
-    components: Map<string, [any, Dispatch<SetStateAction<any>>]>;
-  };
-  id: string;
-  name?: string;
-  type?: string;
-  set: (type: string, data: any) => void;
-  get: (type: string) => any;
-}
-export interface IEntityProps extends PropsWithChildren {
-  id: string;
-  type?: string;
-  components?: any[];
-}
-export const Entity = forwardRef<IEntity, IEntityProps>(function Entity(
-  { id, children, components, type },
+type EntityWith<T> = EntityContext & {
+  components: { [key in Comp<T>["_symbol"]]: T };
+};
+export interface EntityProps extends PropsWithChildren {}
+export const Entity = forwardRef<EntityContext, EntityProps>(function Entity(
+  { children },
   ref
 ) {
-  const get = (name: string) => {
-    const component = entityRef.current._internal.components.get(name);
-    if (!component) {
-      // console.warn(
-      //   `Entity ${entityRef.current.id} does not have component ${name}`
-      // );
-      return;
-    }
-
-    const [state] = component;
-    return state;
-  };
-
-  const set = (name: string, data: any) => {
-    const component = entityRef.current._internal.components.get(name);
-    if (!component) {
-      // console.warn(
-      //   `Entity ${entityRef.current.id} does not have component ${name}`
-      // );
-      return;
-    }
-    const [, setState] = component;
-    setState(data);
-  };
-
-  const entityRef = useRef<IEntity>({
-    _internal: {
-      components: new Map(),
-    },
-    id,
-    type: type ?? "unknown",
-    get,
-    set,
+  const entityRef = useRef<EntityContext>({
+    _id: crypto.randomUUID(),
+    components: new Map(),
+    getComponent: null,
   });
+
+  const getComponent = <T,>(component: Comp<T>) => {
+    const c = entityRef.current.components.get(component._symbol);
+    if (!c) {
+      console.warn(
+        `Entity ${entityRef.current._id} does not have component ${component._symbol.description}`
+      );
+      return;
+    }
+    return c as [T, Dispatch<T>];
+  };
+  entityRef.current.getComponent = getComponent;
   useImperativeHandle(ref, () => entityRef.current);
 
   const gameEntities = useGame((state) => state.entities);
@@ -422,6 +402,61 @@ export const Entity = forwardRef<IEntity, IEntityProps>(function Entity(
   );
 });
 
+// hooks
+type SystemSubscriber = {
+  components: Comp<any>[];
+  run: SystemFunction;
+};
+type SystemFunction = <T extends symbol[]>(
+  entites: EntityWith<T>[],
+  delta: number
+) => void;
+export function useSystem(callback: SystemFunction, components?: Comp<any>[]) {
+  // make sure users aren't using systems inside entities
+  const entity = useContext(EntityContext);
+  if (entity) {
+    throw Error("useNewSystem cannot be used within an Entity.");
+  }
+
+  const store = useGameStore();
+  const memoCallback = useCallback(callback, []);
+  const systemSubscriber = useRef<SystemSubscriber>({
+    components,
+    run: memoCallback,
+  });
+
+  useEffect(() => {
+    store.get().systems = [...store.get().systems, systemSubscriber.current];
+    return () => {
+      store.get().systems = store
+        .get()
+        .systems.filter((system) => system !== systemSubscriber.current);
+    };
+  }, [callback, store]);
+}
+
+type UpdateSubscriber = (input: InputState, delta: number) => void;
+export function useUpdate(
+  callback: UpdateSubscriber,
+  dependencies?: unknown[]
+) {
+  // make sure users are using update inside an entity
+  const entity = useContext(EntityContext);
+  if (!entity) {
+    throw Error("useUpdate should be used within an Entity.");
+  }
+
+  const store = useGameStore();
+  const memoCallback = useCallback(callback, [dependencies]);
+
+  useEffect(() => {
+    store.get().updates.add(memoCallback);
+    return () => {
+      store.get().updates.delete(memoCallback);
+    };
+  }, [callback, store]);
+}
+
 export function useEntity() {
   const context = useContext(EntityContext);
   if (!context) {
@@ -430,57 +465,67 @@ export function useEntity() {
   return context;
 }
 
-export function useComponent<T>(name: string, data: T) {
-  const state = useState(data);
+type Comp<T> = {
+  _symbol: symbol;
+  _defaultValue: T;
+};
+export function createComponent<T>(defaultValue: T) {
+  return {
+    _symbol: Symbol("react-gamin.component"),
+    _defaultValue: defaultValue,
+  } as Comp<T>;
+}
+export function useComponent<T>(component: Comp<T>, intialValue?: T) {
   const entity = useEntity();
-  entity._internal.components.set(name, state);
+  const state = useState(intialValue ?? component._defaultValue);
+
+  useEffect(() => {
+    entity.components.set(component._symbol, state);
+    return () => {
+      entity.components.delete(component._symbol);
+    };
+  }, [entity, state]);
+
   return state;
 }
 
-export interface Component {}
-export interface PositionComponent extends Component {
+// default components
+export interface Transform {
   x: number;
   y: number;
   z: number;
 }
-export function usePositionComponent(
-  initialValue?: Partial<PositionComponent>
-) {
-  const state = useComponent<PositionComponent>("position", {
-    x: 0,
-    y: 0,
-    z: 0,
-    ...initialValue,
-  });
-  return state;
+export const TransformComponent = createComponent<Transform>({
+  x: 0,
+  y: 0,
+  z: 0,
+});
+export function useTransformComponent(initialValue?: Transform) {
+  const componentState = useComponent(TransformComponent, initialValue);
+  return componentState;
 }
 
-export interface VelocityComponent extends Component {
+export interface Velocity {
   dx: number;
   dy: number;
   dz: number;
 }
-export function useVelocityComponent(
-  initialValue?: Partial<VelocityComponent>
-) {
-  const state = useComponent<VelocityComponent>("velocity", {
-    dx: 0,
-    dy: 0,
-    dz: 0,
-    ...initialValue,
-  });
-  return state;
+export const VelocityComponent = createComponent<Velocity>({
+  dx: 0,
+  dy: 0,
+  dz: 0,
+});
+export function useVelocityComponent(initialValue?: Velocity) {
+  const componentState = useComponent(VelocityComponent, initialValue);
+  return componentState;
 }
 
-export interface BodyComponent extends Component {
+export interface Body {
   height: number;
   width: number;
 }
-export function useBodyComponent(initialValue?: Partial<BodyComponent>) {
-  const state = useComponent<BodyComponent>("body", {
-    height: 0,
-    width: 0,
-    ...initialValue,
-  });
-  return state;
+export const BodyComponent = createComponent<Body>({ height: 10, width: 10 });
+export function useBodyComponent(initialValue?: Body) {
+  const componentState = useComponent(BodyComponent, initialValue);
+  return componentState;
 }
