@@ -8,64 +8,37 @@ import {
   useEffect,
   useLayoutEffect,
   useContext,
-  useSyncExternalStore,
   useCallback,
   Dispatch,
   forwardRef,
   useImperativeHandle,
 } from "react";
 
-type Store<A> = {
-  set(newState: Partial<A>): void;
-  get(): A;
-  subscribe(subscriber: Subscriber): () => void;
+// types
+type Stage = {
+  [key: string]: any;
 };
-type Subscriber = (...args: any[]) => void;
-function createStore<A>(initialState: A) {
-  const state: MutableRefObject<A> = useRef(initialState);
-  const subscribers: Set<Subscriber> = new Set();
-  const store = {
-    _internal: {
-      subscribers,
-    },
-    set(newState: Partial<A>) {
-      state.current = {
-        ...state.current,
-        ...newState,
-      };
-    },
-    get() {
-      return state.current;
-    },
-    subscribe(subscriber: Subscriber) {
-      subscribers.add(subscriber);
-      return () => subscribers.delete(subscriber);
-    },
-  } as const;
-  return store;
-}
-
-const initialGameState: GameStore = {
-  entities: new Set(),
-  getEntitiesWithComponents: () => [],
-  height: 480,
-  input: null,
-  systems: [],
-  updates: new Set(),
-  width: 640,
+type System = {
+  components: Comp<any>[];
+  run: SystemFunction;
 };
+type SystemFunction = <T extends symbol[]>(
+  entites: EntityWith<T>[],
+  delta: number
+) => void;
 
-export type GameStore = {
-  entities: Set<EntityContext>;
-  getEntitiesWithComponents: (...components: Comp<any>[]) => EntityWith<any>[];
+export type GameContext = {
+  addEntity: (entity: EntityContext) => void;
+  addSystem: (system: System) => void;
+  addUpdate: (update: UpdateSubscriber) => void;
+  getEntities: <T>(components: Comp<T>[]) => EntityWith<T>[];
   height: number;
-  input: InputState;
-  systems: SystemSubscriber[];
-  updates: Set<UpdateSubscriber>;
+  removeEntity: (entity: EntityContext) => void;
+  removeSystem: (system: System) => void;
+  removeUpdate: (update: UpdateSubscriber) => void;
   width: number;
 };
-export const GameContext = createContext<null | Store<GameStore>>(null);
-console.log(GameContext);
+export const GameContext = createContext<null | GameContext>(null);
 interface GameProps extends PropsWithChildren {
   aspectRatio?: string;
   fps?: number;
@@ -80,27 +53,53 @@ export function Game(props: GameProps) {
   const [gameHeight, setHeight] = useState(height ?? 480);
   const [gameWidth, setWidth] = useState(width ?? 640);
 
-  const getEntitiesWithComponents = (...components: Comp<any>[]) => {
-    const entities = [...store.get().entities]?.filter((entity) => {
-      const hasComponent = components?.every((value) =>
+  const entities = useRef<EntityContext[]>([]);
+  const input = useInputSystem();
+  const stages = useRef<Stage[]>([]);
+  const systems = useRef<System[]>([]);
+  const updates = useRef<UpdateSubscriber[]>([]);
+
+  const getEntities = <T,>(components: Comp<T>[]) => {
+    const entitiesWithComponents = entities.current?.filter((entity) => {
+      const hasAllComponent = components?.every((value) =>
         entity.components.has(value._symbol)
       );
-      return hasComponent;
+      return hasAllComponent;
     });
-    return entities;
+    return entitiesWithComponents as EntityWith<T>[];
   };
 
-  const input = useInputSystem();
-  const store = createStore<GameStore>({
-    ...initialGameState,
-    height: gameHeight,
-    width: gameWidth,
-    input: input.current,
-    getEntitiesWithComponents: getEntitiesWithComponents,
-  });
-  // every rendered component will register themselves
-  // into these refs via the game context
-  const context = useRef<ReturnType<typeof createStore<GameStore>>>(store);
+  const addEntity = (entity: EntityContext) => {
+    entities.current = [...entities.current, entity];
+  };
+
+  const removeEntity = (entity: EntityContext) => {
+    entities.current = entities.current.filter((e) => e !== entity);
+  };
+
+  const addStage = (stage: Stage) => {
+    stages.current = [...stages.current, stage];
+  };
+
+  const removeStage = (stage: Stage) => {
+    stages.current = stages.current.filter((s) => s !== stage);
+  };
+
+  const addSystem = (system: System) => {
+    systems.current = [...systems.current, system];
+  };
+
+  const removeSystem = (system: System) => {
+    systems.current = systems.current.filter((s) => s !== system);
+  };
+
+  const addUpdate = (update: UpdateSubscriber) => {
+    updates.current = [...updates.current, update];
+  };
+
+  const removeUpdate = (update: UpdateSubscriber) => {
+    updates.current = updates.current.filter((s) => s !== update);
+  };
 
   // game update loop
   useEffect(() => {
@@ -117,20 +116,15 @@ export function Game(props: GameProps) {
       while (accumulator > FRAME_MS && ticks < 5) {
         // update systems
 
-        store.get().systems.forEach((system) => {
+        systems.current.forEach((system) => {
           // pass only entities that have the components the system wants
-          const entities = [...store.get().entities].filter((entity) => {
-            const hasComponent = system.components?.every((value) =>
-              entity.components.has(value._symbol)
-            );
-            return hasComponent;
-          });
+          const entities = getEntities(system.components);
           system.run(entities as EntityWith<any>[], FRAME_MS);
         });
 
         // update entities
-        [...store.get().updates].forEach((subscriber) => {
-          subscriber(store.get().input, FRAME_MS);
+        updates.current.forEach((subscriber) => {
+          subscriber(input.current, FRAME_MS);
         });
 
         ticks++;
@@ -141,11 +135,14 @@ export function Game(props: GameProps) {
       ticks = 0;
       frame = requestAnimationFrame(update);
     }
-    frame = requestAnimationFrame(update);
+    update(0);
+
     return () => {
       cancelAnimationFrame(frame);
+      accumulator = 0;
+      lastUpdate = 0;
     };
-  }, [store]);
+  }, []);
 
   const gameElementRef = useRef<HTMLDivElement>();
   useLayoutEffect(() => {
@@ -157,47 +154,57 @@ export function Game(props: GameProps) {
   }, []);
 
   return (
-    <div
-      id="react-gamin-container"
-      ref={gameElementRef}
-      style={{
-        aspectRatio: aspectRatio ?? "4/3",
-        height,
-        margin: "0px auto",
-        overflow: "hidden",
-        width: width ?? "640px",
-        ...style,
+    <GameContext.Provider
+      value={{
+        addEntity,
+        addSystem,
+        addUpdate,
+        getEntities,
+        height: gameHeight ?? 480,
+        removeEntity,
+        removeSystem,
+        removeUpdate,
+        width: gameWidth ?? 640,
       }}
     >
       <div
-        id="react-gamin"
+        id="react-gamin-container"
+        ref={gameElementRef}
         style={{
-          height: "100%",
-          position: "relative",
-          width: "100%",
+          aspectRatio: aspectRatio ?? "4/3",
+          height,
+          margin: "0px auto",
+          overflow: "hidden",
+          width: width ?? "640px",
+          ...style,
         }}
       >
-        <GameContext.Provider value={context.current}>
+        <div
+          id="react-gamin"
+          style={{
+            height: "100%",
+            position: "relative",
+            width: "100%",
+          }}
+        >
           {children}
-        </GameContext.Provider>
+        </div>
       </div>
-    </div>
+    </GameContext.Provider>
   );
 }
 
-type GameStoreSelector<T> = (state: GameStore) => T;
+type GameStoreSelector<T> = (state: GameContext) => T;
 export function useGame<T>(selector: GameStoreSelector<T>): T;
-export function useGame<T>(): GameStore;
+export function useGame<T>(): GameContext;
 export function useGame<T>(selector?: GameStoreSelector<T>) {
-  const store = useContext(GameContext);
-  if (!store)
+  const context = useContext(GameContext);
+  if (!context)
     throw new Error(
       "Game hooks can only be used within the <Game /> component."
     );
 
-  const state = useSyncExternalStore(store.subscribe, () =>
-    selector ? selector(store.get()) : store.get()
-  );
+  const [state] = useState(selector ? selector(context) : context);
   return state;
 }
 
@@ -387,11 +394,11 @@ export const Entity = forwardRef<EntityContext, EntityProps>(function Entity(
   entityRef.current.getComponent = getComponent;
   useImperativeHandle(ref, () => entityRef.current);
 
-  const gameEntities = useGame((state) => state.entities);
+  const store = useGame();
   useEffect(() => {
-    gameEntities.add(entityRef.current);
+    store.addEntity(entityRef.current);
     return () => {
-      gameEntities.delete(entityRef.current);
+      store.removeEntity(entityRef.current);
     };
   }, []);
 
@@ -403,14 +410,6 @@ export const Entity = forwardRef<EntityContext, EntityProps>(function Entity(
 });
 
 // hooks
-type SystemSubscriber = {
-  components: Comp<any>[];
-  run: SystemFunction;
-};
-type SystemFunction = <T extends symbol[]>(
-  entites: EntityWith<T>[],
-  delta: number
-) => void;
 export function useSystem(callback: SystemFunction, components?: Comp<any>[]) {
   // make sure users aren't using systems inside entities
   const entity = useContext(EntityContext);
@@ -418,21 +417,19 @@ export function useSystem(callback: SystemFunction, components?: Comp<any>[]) {
     throw Error("useNewSystem cannot be used within an Entity.");
   }
 
-  const store = useGameStore();
+  const gameContext = useGame();
   const memoCallback = useCallback(callback, []);
-  const systemSubscriber = useRef<SystemSubscriber>({
+  const systemSubscriber = useRef<System>({
     components,
     run: memoCallback,
   });
 
   useEffect(() => {
-    store.get().systems = [...store.get().systems, systemSubscriber.current];
+    gameContext.addSystem(systemSubscriber.current);
     return () => {
-      store.get().systems = store
-        .get()
-        .systems.filter((system) => system !== systemSubscriber.current);
+      gameContext.removeSystem(systemSubscriber.current);
     };
-  }, [callback, store]);
+  }, [callback, gameContext]);
 }
 
 type UpdateSubscriber = (input: InputState, delta: number) => void;
@@ -446,15 +443,15 @@ export function useUpdate(
     throw Error("useUpdate should be used within an Entity.");
   }
 
-  const store = useGameStore();
+  const gameContext = useGame();
   const memoCallback = useCallback(callback, [dependencies]);
 
   useEffect(() => {
-    store.get().updates.add(memoCallback);
+    gameContext.addUpdate(memoCallback);
     return () => {
-      store.get().updates.delete(memoCallback);
+      gameContext.removeUpdate(memoCallback);
     };
-  }, [callback, store]);
+  }, [callback, gameContext]);
 }
 
 export function useEntity() {

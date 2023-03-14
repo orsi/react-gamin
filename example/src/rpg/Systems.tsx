@@ -49,7 +49,7 @@ export function useMove() {
       const [currentBody] = entity.getComponent(BodyComponent);
 
       const movementEntities = game
-        .getEntitiesWithComponents(TransformComponent, BodyComponent)
+        .getEntities([TransformComponent, BodyComponent])
         .filter((e) => {
           const hasPosition = e.getComponent(TransformComponent);
           const hasBody = e.getComponent(BodyComponent);
@@ -133,7 +133,7 @@ export function useAction(callback?: (actor?: EntityContext) => void) {
   return useCallback(
     (at: Transform) => {
       const e2 = game
-        .getEntitiesWithComponents(TransformComponent, BodyComponent)
+        .getEntities([TransformComponent, BodyComponent])
         .find((e) => {
           const [ePosition] = e.getComponent(TransformComponent);
           const [eBody] = e.getComponent(BodyComponent);

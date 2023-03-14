@@ -1,10 +1,10 @@
 import { CSSProperties, HTMLProps, useEffect, useRef, useState } from "react";
-import { GameStore, useGame, useUpdate } from "./ecs";
+import { GameContext, useGame, useUpdate } from "./ecs";
 
 export function GameDebugger() {
   const [isMinimized, setIsMinimized] = useState(false);
   const store = useGame();
-  const [game, setGame] = useState<GameStore>();
+  const [game, setGame] = useState<GameContext>();
 
   const onToggle = () => {
     setIsMinimized(!isMinimized);
@@ -97,7 +97,8 @@ export function getSpriteStyles(
   spriteWidth?: number,
   spriteHeight?: number,
   spriteIndex?: number,
-  reversed = false
+  reversed = false,
+  flipped = false
 ) {
   const style: CSSProperties = {
     left: "0",
@@ -135,6 +136,10 @@ export function getSpriteStyles(
     style.transform = `${style.transform} rotateY(180deg)`;
   }
 
+  if (flipped) {
+    style.transform = `${style.transform} rotateX(180deg)`;
+  }
+
   return style;
 }
 
@@ -145,6 +150,7 @@ export interface SpriteProps extends HTMLProps<HTMLImageElement> {
   y?: number;
   z?: number;
   reversed?: boolean;
+  flipped?: boolean;
   sheet?: Sheet;
   selectedSprite?: number;
   animations?: Animation[];
@@ -154,6 +160,7 @@ export function Sprite({
   alt,
   animations,
   reversed,
+  flipped,
   selectedAnimation,
   selectedSprite,
   sheet,
@@ -230,7 +237,8 @@ export function Sprite({
     sheet?.width,
     sheet?.height,
     currentSprite,
-    reversed
+    reversed,
+    flipped
   );
 
   return (
