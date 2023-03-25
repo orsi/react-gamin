@@ -5,9 +5,9 @@ import {
   BodyComponent,
   TransformComponent,
   VelocityComponent,
-  useSystem,
   IEntity,
   useAudio,
+  useUpdate,
 } from "react-gamin";
 import {
   BallComponent,
@@ -19,7 +19,10 @@ import {
   PADDLE_SPEED,
 } from ".";
 
-export function BallMovementSystem() {
+// pong game logic highly based off of:
+// https://gist.github.com/straker/81b59eecf70da93af396f963596dfdc5
+
+export function useBallMovementSystem() {
   const ballWallSfx = useAudio(boopAudioSfx);
   const height = useGame((state) => state.height);
   const width = useGame((state) => state.width);
@@ -30,7 +33,7 @@ export function BallMovementSystem() {
     VelocityComponent
   );
 
-  useSystem(() => {
+  useUpdate(() => {
     const ball = ballQuery.get()[0];
     // ball
     if (ball.components.transform.y + ball.components.body.height >= height) {
@@ -49,20 +52,6 @@ export function BallMovementSystem() {
       ballWallSfx.play();
     }
     const newY = ball.components.transform.y + ball.components.velocity.dy;
-
-    if (ball.components.transform.x + ball.components.body.width >= width) {
-      ball.update(VelocityComponent, {
-        dx: -BALL_SPEED,
-        dy: ball.components.velocity.dy,
-        dz: 0,
-      });
-    } else if (ball.components.transform.x <= 0) {
-      ball.update(VelocityComponent, {
-        dx: BALL_SPEED,
-        dy: ball.components.velocity.dy,
-        dz: 0,
-      });
-    }
     const newX = ball.components.transform.x + ball.components.velocity.dx;
     ball.update(TransformComponent, {
       x: newX,
@@ -70,10 +59,9 @@ export function BallMovementSystem() {
       z: 0,
     });
   });
-
-  return <></>;
 }
-export function OpponentMovementSystem() {
+
+export function useOpponentMovementSystem() {
   const height = useGame((state) => state.height);
   const opponentQuery = useQuery(
     OpponentComponent,
@@ -82,7 +70,7 @@ export function OpponentMovementSystem() {
     VelocityComponent
   );
 
-  useSystem(() => {
+  useUpdate(() => {
     const opponent = opponentQuery.get()[0];
 
     // move opponent, and update if they hit walls
@@ -113,11 +101,7 @@ export function OpponentMovementSystem() {
   return <></>;
 }
 
-export function ScoreSystem({
-  onGameOver,
-}: {
-  onGameOver?: (win: boolean) => void;
-}) {
+export function useScoreSystem(onGameOver?: (win: boolean) => void) {
   const height = useGame((state) => state.height);
   const width = useGame((state) => state.width);
   const ballQuery = useQuery(
@@ -129,7 +113,7 @@ export function ScoreSystem({
   const scorePlayerQuery = useQuery(ScoreComponent, PlayerComponent);
   const scoreOpponentQuery = useQuery(ScoreComponent, OpponentComponent);
 
-  useSystem(() => {
+  useUpdate(() => {
     const ball = ballQuery.get()[0];
     const playerScore = scorePlayerQuery.get()[0];
     const opponentScore = scoreOpponentQuery.get()[0];
@@ -177,7 +161,7 @@ export function ScoreSystem({
   return <></>;
 }
 
-export function CollisionSystem() {
+export function useCollisionSystem() {
   const paddleCollisionSfx = useAudio(boopAudioSfx);
 
   const ballQuery = useQuery(
@@ -199,7 +183,7 @@ export function CollisionSystem() {
     VelocityComponent
   );
 
-  useSystem(() => {
+  useUpdate(() => {
     const ball = ballQuery.get()[0];
     const player = playerQuery.get()[0];
     const opponent = opponentQuery.get()[0];

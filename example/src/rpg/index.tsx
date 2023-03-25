@@ -1,12 +1,14 @@
-import Barrel from "./Barrel";
-import Box from "./Box";
-import Fountain from "./Fountain";
-import Ground from "./Ground";
-import House from "./House";
-import MiloChar from "./MiloChar";
-import Chest from "./Chest";
-import Plant from "./Plant";
 import { Game, Entities } from "react-gamin";
+import {
+  Ground,
+  Box,
+  Barrel,
+  House,
+  Fountain,
+  Chest,
+  Plant,
+  MiloChar,
+} from "./entities";
 
 export default function RPG() {
   return (

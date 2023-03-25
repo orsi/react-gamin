@@ -8,21 +8,17 @@ import {
   useLayoutEffect,
   useContext,
   useCallback,
-  Dispatch,
+  Fragment,
 } from "react";
 import { IEntity, EntityContext, Component } from "./entities";
 import { useInputSystem, InputState } from "./input";
 
 export type GameContext = {
   addEntity: (entity: IEntity) => void;
-  addSystem: (system: SystemFunction) => void;
   addUpdate: (update: UpdateSubscriber) => void;
-  changeScene: (scene: React.ReactNode) => void;
   getEntities: () => IEntity[];
   height: number;
   removeEntity: (entity: IEntity) => void;
-  removeE: (entity: React.ReactNode) => void;
-  removeSystem: (system: SystemFunction) => void;
   removeUpdate: (update: UpdateSubscriber) => void;
   width: number;
 };
@@ -40,11 +36,9 @@ export function Game(props: GameProps) {
   const FRAME_MS = 1000 / (fps ?? 60);
   const [gameHeight, setHeight] = useState(height ?? 480);
   const [gameWidth, setWidth] = useState(width ?? 640);
-  const [scene, setScene] = useState<React.ReactNode>(children);
 
   const entities = useRef<IEntity[]>([]);
   const input = useInputSystem();
-  const systems = useRef<SystemFunction[]>([]);
   const updates = useRef<UpdateSubscriber[]>([]);
 
   const getEntities = () => {
@@ -57,22 +51,6 @@ export function Game(props: GameProps) {
 
   const removeEntity = (entity: IEntity) => {
     entities.current = entities.current.filter((e) => e !== entity);
-  };
-
-  const removeE = (entity: React.ReactNode) => {
-    // entities.current = entities.current.filter((e) => e !== entity);
-  };
-
-  const changeScene = (scene: React.ReactNode) => {
-    setScene(scene);
-  };
-
-  const addSystem = (system: SystemFunction) => {
-    systems.current = [...systems.current, system];
-  };
-
-  const removeSystem = (system: SystemFunction) => {
-    systems.current = systems.current.filter((s) => s !== system);
   };
 
   const addUpdate = (update: UpdateSubscriber) => {
@@ -96,13 +74,6 @@ export function Game(props: GameProps) {
       // loop can run, we allow the ability to catch up if the updates took
       // longer for some reason.
       while (accumulator > FRAME_MS && ticks < 5) {
-        // update systems
-
-        systems.current.forEach((system) => {
-          // pass only entities that have the components the system wants
-          system(entities.current, FRAME_MS);
-        });
-
         // update entities
         updates.current.forEach((subscriber) => {
           subscriber(input.current, FRAME_MS);
@@ -138,14 +109,10 @@ export function Game(props: GameProps) {
     <GameContext.Provider
       value={{
         addEntity,
-        addSystem,
         addUpdate,
-        changeScene,
         getEntities,
         height: gameHeight ?? 480,
         removeEntity,
-        removeE,
-        removeSystem,
         removeUpdate,
         width: gameWidth ?? 640,
       }}
@@ -170,7 +137,7 @@ export function Game(props: GameProps) {
             width: "100%",
           }}
         >
-          {scene}
+          {children}
         </div>
       </div>
     </GameContext.Provider>
@@ -216,54 +183,40 @@ export function useQuery<T extends Component<any, any>[]>(...components: T) {
   };
 }
 
-export function useSceneManager() {
-  const game = useGame();
-  if (!game) {
-    throw new Error("You can only call useSceneManager in a <Game /> context.");
-  }
-
-  return {
-    change: (scene: React.ReactNode) => {
-      game.changeScene(scene);
-    },
-  };
-}
-
-export type SystemFunction = (entites: IEntity[], delta: number) => void;
-export function useSystem(callback: SystemFunction) {
-  const gameContext = useGame();
-  if (!gameContext) {
-    throw Error("useSystem must be used inside a <Game /> context.");
-  }
-
-  const memoCallback = useCallback(callback, []);
-
-  useEffect(() => {
-    gameContext.addSystem(memoCallback);
-    return () => {
-      gameContext.removeSystem(memoCallback);
-    };
-  }, [callback, gameContext]);
-}
-
 type UpdateSubscriber = (input: InputState, delta: number) => void;
 export function useUpdate(
   callback: UpdateSubscriber,
   dependencies?: unknown[]
 ) {
-  // make sure users are using update inside an entity
-  const entity = useContext(EntityContext);
-  if (!entity) {
-    throw Error("useUpdate should be used within an Entity.");
+  const game = useGame();
+  if (!game) {
+    throw Error("useUpdate must be used inside <Game />.");
   }
 
-  const gameContext = useGame();
   const memoCallback = useCallback(callback, [dependencies]);
 
   useEffect(() => {
-    gameContext.addUpdate(memoCallback);
+    game.addUpdate(memoCallback);
     return () => {
-      gameContext.removeUpdate(memoCallback);
+      game.removeUpdate(memoCallback);
     };
-  }, [callback, gameContext]);
+  }, [callback, game]);
+}
+
+interface SystemsProps {
+  systems: React.ReactNode[];
+}
+export function Systems({ systems }: SystemsProps) {
+  const game = useGame();
+  if (!game) {
+    throw Error("Systems must be inside a <Game />.");
+  }
+
+  return (
+    <>
+      {systems.map((system, i) => (
+        <Fragment key={i}>{system}</Fragment>
+      ))}
+    </>
+  );
 }

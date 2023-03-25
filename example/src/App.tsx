@@ -2,14 +2,8 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import Pong from "./pong";
 
 import RPG from "./rpg";
-import Test from "./test";
 
 const routes = [
-  {
-    name: "Test",
-    path: "/test",
-    element: <Test />,
-  },
   {
     name: "Pong",
     path: "/",

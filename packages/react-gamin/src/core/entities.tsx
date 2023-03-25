@@ -24,22 +24,6 @@ export function Entities({ entities }: EntitiesProps) {
   );
 }
 
-export function useEntityManager() {
-  const game = useGame();
-  if (!game) {
-    throw new Error(
-      "You can only call useEntityManager in a <Game /> context."
-    );
-  }
-
-  return {
-    remove: (entity: React.ReactNode) => {
-      console.log("remove", entity);
-      game.removeE(entity);
-    },
-  };
-}
-
 // this type is magic!
 export type EntityComponentsMap<T extends Component<any, any>[]> =
   T extends undefined
@@ -159,7 +143,7 @@ export function useComponent<K extends string, T>(name: K, intialValue?: T) {
     entity._state[name] = [state, setState];
   }, [state]);
 
-  return [state, setState] as [T, Dispatch<T>];
+  return [state, setState] as [T, Dispatch<React.SetStateAction<T>>];
 }
 
 // default components
