@@ -9,7 +9,7 @@ import {
   useContext,
   useState,
 } from "react";
-import { useGame } from "./ecs";
+import { useGame } from "./game";
 
 interface EntitiesProps {
   entities: React.ReactNode[];
