@@ -1,3 +1,4 @@
+import boopAudioSfx from "./assets/GUI Sound Effects_031.mp3";
 import {
   useGame,
   useQuery,
@@ -6,6 +7,7 @@ import {
   VelocityComponent,
   useSystem,
   IEntity,
+  useAudio,
 } from "react-gamin";
 import {
   BallComponent,
@@ -18,6 +20,7 @@ import {
 } from ".";
 
 export function BallMovementSystem() {
+  const ballWallSfx = useAudio(boopAudioSfx);
   const height = useGame((state) => state.height);
   const width = useGame((state) => state.width);
   const ballQuery = useQuery(
@@ -36,12 +39,14 @@ export function BallMovementSystem() {
         dy: -BALL_SPEED,
         dz: 0,
       });
+      ballWallSfx.play();
     } else if (ball.components.transform.y <= 0) {
       ball.update(VelocityComponent, {
         dx: ball.components.velocity.dx,
         dy: BALL_SPEED,
         dz: 0,
       });
+      ballWallSfx.play();
     }
     const newY = ball.components.transform.y + ball.components.velocity.dy;
 
@@ -173,6 +178,8 @@ export function ScoreSystem({
 }
 
 export function CollisionSystem() {
+  const paddleCollisionSfx = useAudio(boopAudioSfx);
+
   const ballQuery = useQuery(
     BallComponent,
     BodyComponent,
@@ -222,6 +229,7 @@ export function CollisionSystem() {
         y: ball.components.transform.y,
         z: 0,
       });
+      paddleCollisionSfx.play();
     } else if (collides(ball, opponent)) {
       ball.update(VelocityComponent, {
         dx: ball.components.velocity.dx * -1,
@@ -233,6 +241,7 @@ export function CollisionSystem() {
         y: ball.components.transform.y,
         z: 0,
       });
+      paddleCollisionSfx.play();
     }
   });
 
