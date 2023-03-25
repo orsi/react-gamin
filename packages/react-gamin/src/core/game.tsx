@@ -14,11 +14,9 @@ import { IEntity, EntityContext, Component } from "./entities";
 import { useInputSystem, InputState } from "./input";
 
 export type GameContext = {
-  addEntity: (entity: IEntity) => void;
   addUpdate: (update: UpdateSubscriber) => void;
-  getEntities: () => IEntity[];
+  entities: IEntity[];
   height: number;
-  removeEntity: (entity: IEntity) => void;
   removeUpdate: (update: UpdateSubscriber) => void;
   width: number;
 };
@@ -40,18 +38,6 @@ export function Game(props: GameProps) {
   const entities = useRef<IEntity[]>([]);
   const input = useInputSystem();
   const updates = useRef<UpdateSubscriber[]>([]);
-
-  const getEntities = () => {
-    return entities.current;
-  };
-
-  const addEntity = (entity: IEntity) => {
-    entities.current = [...entities.current, entity];
-  };
-
-  const removeEntity = (entity: IEntity) => {
-    entities.current = entities.current.filter((e) => e !== entity);
-  };
 
   const addUpdate = (update: UpdateSubscriber) => {
     updates.current = [...updates.current, update];
@@ -108,11 +94,9 @@ export function Game(props: GameProps) {
   return (
     <GameContext.Provider
       value={{
-        addEntity,
         addUpdate,
-        getEntities,
+        entities: entities.current,
         height: gameHeight ?? 480,
-        removeEntity,
         removeUpdate,
         width: gameWidth ?? 640,
       }}
@@ -144,39 +128,30 @@ export function Game(props: GameProps) {
   );
 }
 
-type GameStoreSelector<T> = (state: GameContext) => T;
-export function useGame<T>(selector: GameStoreSelector<T>): T;
+type GameContextSelector<T> = (state: GameContext) => T;
+export function useGame<T>(selector: GameContextSelector<T>): T;
 export function useGame<T>(): GameContext;
-export function useGame<T>(selector?: GameStoreSelector<T>) {
-  const context = useContext(GameContext);
-  if (!context)
+export function useGame<T>(selector?: GameContextSelector<T>) {
+  const game = useContext(GameContext);
+  if (!game)
     throw new Error(
       "Game hooks can only be used within the <Game /> component."
     );
 
-  const [state] = useState(selector ? selector(context) : context);
+  const [state] = useState(selector ? selector(game) : game);
   return state;
 }
 
-export function useGameStore() {
-  const store = useContext(GameContext);
-  if (!store)
-    throw new Error(
-      "Game hooks can only be used within the <Game /> component."
-    );
-  return store;
-}
-
 export function useQuery<T extends Component<any, any>[]>(...components: T) {
-  const context = useGame();
-  if (!context) {
+  const game = useGame();
+  if (!game) {
     throw new Error(
       "Game hooks can only be used within the <Game /> component."
     );
   }
   return {
     get: () => {
-      return context.getEntities().filter((e) => {
+      return game.entities.filter((e) => {
         return components.every((c) => e.components.hasOwnProperty(c.name));
       }) as IEntity<T>[];
     },
@@ -201,22 +176,4 @@ export function useUpdate(
       game.removeUpdate(memoCallback);
     };
   }, [callback, game]);
-}
-
-interface SystemsProps {
-  systems: React.ReactNode[];
-}
-export function Systems({ systems }: SystemsProps) {
-  const game = useGame();
-  if (!game) {
-    throw Error("Systems must be inside a <Game />.");
-  }
-
-  return (
-    <>
-      {systems.map((system, i) => (
-        <Fragment key={i}>{system}</Fragment>
-      ))}
-    </>
-  );
 }

@@ -92,9 +92,9 @@ export const Entity = forwardRef<IEntity, EntityProps>(function Entity(
 
   const game = useGame();
   useEffect(() => {
-    game.addEntity(entityRef.current);
+    game.entities = [...game.entities, entityRef.current];
     return () => {
-      game.removeEntity(entityRef.current);
+      game.entities = game.entities.filter((e) => e !== entityRef.current);
     };
   }, []);
 
