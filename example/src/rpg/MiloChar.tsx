@@ -22,7 +22,7 @@ export default function MiloChar({ x, y }: MiloCharProps) {
     width: 16,
     height: 32,
   });
-  const move = useMove();
+  const move = useMove(body, position);
   const action = useAction();
 
   const isTriggered = useRef(false);

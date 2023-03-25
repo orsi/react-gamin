@@ -4,7 +4,7 @@ import {
   useTransformComponent,
 } from "react-gamin";
 import overworldImage from "./assets/Overworld.png";
-import { useAction } from "./Systems";
+import { useActionable } from "./Systems";
 interface HouseProps {
   x?: number;
   y?: number;
@@ -21,7 +21,7 @@ export default function House({ x, y, z }: HouseProps) {
     z: z ?? 0,
   });
 
-  useAction(() => {
+  const actionable = useActionable(() => {
     console.log("mah house!");
   });
 

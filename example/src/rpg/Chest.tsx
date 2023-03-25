@@ -2,12 +2,12 @@ import objectsImage from "./assets/objects.png";
 import { useState } from "react";
 import {
   Sprite,
-  EntityContext,
   useBodyComponent,
   useTransformComponent,
   TransformComponent,
+  Transform,
 } from "react-gamin";
-import { useAction } from "./Systems";
+import { useActionable } from "./Systems";
 
 interface BarrelProps {
   x?: number;
@@ -26,16 +26,18 @@ export default function Chest({ x, y, z }: BarrelProps) {
     z: z ?? 0,
   });
 
-  useAction((actor: EntityContext) => {
+  useActionable((entity) => {
     if (currentSprite === 0) {
       setCurrentSprite(1);
-      const [position, setPosition] = actor.getComponent(TransformComponent);
-      // blast back!
-      setPosition({
-        x: position.x,
-        y: position.y + 10,
-        z: 0,
-      });
+      if (entity.has(TransformComponent)) {
+        // blast back!
+        entity.update(TransformComponent, {
+          // TODO: figure out how we can type this better
+          x: (entity.components.transform as Transform).x,
+          y: (entity.components.transform as Transform).y + 10,
+          z: 0,
+        });
+      }
     }
   });
 

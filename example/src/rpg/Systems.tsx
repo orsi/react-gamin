@@ -1,66 +1,32 @@
+import { useCallback } from "react";
 import {
-  createContext,
-  PropsWithChildren,
-  useRef,
-  useContext,
-  useEffect,
-  useCallback,
-} from "react";
-import {
+  Body,
   BodyComponent,
-  EntityContext,
+  createComponent,
+  IEntity,
   Transform,
   TransformComponent,
+  useComponent,
   useEntity,
-  useGame,
+  useQuery,
 } from "react-gamin";
 
 const SPEED = 2;
 type TDirection = "up" | "down" | "left" | "right";
 
-interface MoveSystemContext {
-  entities: Map<string, (actor?: EntityContext) => void | undefined>;
-}
-export const MoveSystemContext = createContext<null | MoveSystemContext>(null);
-export function MoveSystem({ children }: PropsWithChildren) {
-  const ref = useRef({ entities: new Map() });
-  return (
-    <MoveSystemContext.Provider value={ref.current}>
-      {children}
-    </MoveSystemContext.Provider>
-  );
-}
-export function useMove() {
-  const game = useGame();
-  const system = useContext(MoveSystemContext);
+export function useMove(body: Body, transform: Transform) {
   const entity = useEntity();
-
-  useEffect(() => {
-    system.entities.set(entity._id, undefined);
-    return () => {
-      system.entities.delete(entity._id);
-    };
-  }, []);
+  const query = useQuery(TransformComponent, BodyComponent);
 
   return useCallback(
     (direction: TDirection) => {
-      const [currentPosition, setPosition] =
-        entity.getComponent(TransformComponent);
-      const [currentBody] = entity.getComponent(BodyComponent);
-
-      const movementEntities = game
-        .getEntities([TransformComponent, BodyComponent])
-        .filter((e) => {
-          const hasPosition = e.getComponent(TransformComponent);
-          const hasBody = e.getComponent(BodyComponent);
-          return hasPosition && hasBody && e !== entity;
-        });
+      const moveableEntities = query.get();
 
       let nextPosition = {
         x: 0,
         y: 0,
         z: 0,
-        ...currentPosition,
+        ...transform,
       };
 
       if (direction === "up") nextPosition.y = nextPosition.y - 1 * SPEED;
@@ -69,21 +35,23 @@ export function useMove() {
       if (direction === "left") nextPosition.x = nextPosition.x - 1 * SPEED;
 
       const eXMin = nextPosition.x;
-      const eXMax = nextPosition.x + currentBody.width!;
+      const eXMax = nextPosition.x + body.width!;
       const eYMin = nextPosition.y;
-      const eYMax = nextPosition.y + currentBody.height!;
+      const eYMax = nextPosition.y + body.height!;
 
-      const foundEntity = movementEntities.find((otherEntity) => {
-        const [ePosition] = otherEntity.getComponent(TransformComponent);
-        const [eBody] = otherEntity.getComponent(BodyComponent);
-        if (otherEntity === entity || !ePosition) {
+      const foundEntity = moveableEntities.find((otherEntity) => {
+        if (otherEntity._id === entity._id) {
           return false;
         }
 
-        const e2XMin = ePosition.x;
-        const e2XMax = ePosition.x + eBody.width!;
-        const e2YMin = ePosition.y;
-        const e2YMax = ePosition.y + eBody.height!;
+        const e2XMin = otherEntity.components.transform.x;
+        const e2XMax =
+          otherEntity.components.transform.x +
+          otherEntity.components.body.width!;
+        const e2YMin = otherEntity.components.transform.y;
+        const e2YMax =
+          otherEntity.components.transform.y +
+          otherEntity.components.body.height!;
         const inRange =
           eXMax >= e2XMin &&
           eXMin <= e2XMax &&
@@ -97,71 +65,49 @@ export function useMove() {
         return;
       }
 
-      setPosition(nextPosition);
+      entity.update(TransformComponent, nextPosition);
     },
-    [game, system, entity]
+    [body, entity, transform]
   );
 }
 
-interface ActionSystemContext {
-  entities: Map<string, (actor?: EntityContext) => void | undefined>;
-}
-export const ActionSystemContext = createContext<null | ActionSystemContext>(
-  null
+const ActionableComponent = createComponent(
+  "actionable",
+  (actor: IEntity) => {}
 );
-export function ActionSystem({ children }: PropsWithChildren) {
-  const ref = useRef({ entities: new Map() });
-  return (
-    <ActionSystemContext.Provider value={ref.current}>
-      {children}
-    </ActionSystemContext.Provider>
-  );
+export function useActionable(callback: (actor: IEntity) => void) {
+  return useComponent("actionable", callback);
 }
-
-export function useAction(callback?: (actor?: EntityContext) => void) {
-  const game = useGame();
-  const system = useContext(ActionSystemContext);
+export function useAction() {
   const entity = useEntity();
-
-  useEffect(() => {
-    system.entities.set(entity._id, callback);
-    return () => {
-      system.entities.delete(entity._id);
-    };
-  }, [callback, entity, system]);
+  const query = useQuery(
+    TransformComponent,
+    BodyComponent,
+    ActionableComponent
+  );
 
   return useCallback(
     (at: Transform) => {
-      const e2 = game
-        .getEntities([TransformComponent, BodyComponent])
-        .find((e) => {
-          const [ePosition] = e.getComponent(TransformComponent);
-          const [eBody] = e.getComponent(BodyComponent);
-          if (e === entity || !ePosition) {
-            return false;
-          }
-
-          const e2XMin = ePosition.x;
-          const e2XMax = ePosition.x + (eBody?.width ?? 0);
-          const e2YMin = ePosition.y;
-          const e2YMax = ePosition.y + (eBody?.height ?? 0);
-          const inPosition =
-            at.x >= e2XMin &&
-            at.x <= e2XMax &&
-            at.y >= e2YMin &&
-            at.y <= e2YMax;
-          return inPosition;
-        });
+      const e2 = query.get().find((e) => {
+        const e2XMin = e.components.transform.x;
+        const e2XMax =
+          e.components.transform.x + (e.components.body?.width ?? 0);
+        const e2YMin = e.components.transform.y;
+        const e2YMax =
+          e.components.transform.y + (e.components.body?.height ?? 0);
+        const inPosition =
+          at.x >= e2XMin && at.x <= e2XMax && at.y >= e2YMin && at.y <= e2YMax;
+        return inPosition;
+      });
 
       if (!e2) {
         return;
       }
 
-      const callback = system.entities.get(e2._id);
-      if (callback) {
-        callback(entity);
+      if (e2.components.actionable) {
+        e2.components.actionable(entity);
       }
     },
-    [game, system, entity]
+    [entity]
   );
 }
