@@ -1,5 +1,4 @@
 import {
-  MutableRefObject,
   useRef,
   createContext,
   PropsWithChildren,
@@ -14,27 +13,16 @@ import {
   useImperativeHandle,
 } from "react";
 
-// types
-type Stage = {
-  [key: string]: any;
-};
-type System = {
-  components: Comp<any>[];
-  run: SystemFunction;
-};
-type SystemFunction = <T extends symbol[]>(
-  entites: EntityWith<T>[],
-  delta: number
-) => void;
-
 export type GameContext = {
-  addEntity: (entity: EntityContext) => void;
-  addSystem: (system: System) => void;
+  addEntity: (entity: IEntity) => void;
+  addSystem: (system: SystemFunction) => void;
   addUpdate: (update: UpdateSubscriber) => void;
-  getEntities: <T>(components: Comp<T>[]) => EntityWith<T>[];
+  changeScene: (scene: React.ReactNode) => void;
+  getEntities: () => IEntity[];
   height: number;
-  removeEntity: (entity: EntityContext) => void;
-  removeSystem: (system: System) => void;
+  removeEntity: (entity: IEntity) => void;
+  removeE: (entity: React.ReactNode) => void;
+  removeSystem: (system: SystemFunction) => void;
   removeUpdate: (update: UpdateSubscriber) => void;
   width: number;
 };
@@ -52,44 +40,38 @@ export function Game(props: GameProps) {
   const FRAME_MS = 1000 / (fps ?? 60);
   const [gameHeight, setHeight] = useState(height ?? 480);
   const [gameWidth, setWidth] = useState(width ?? 640);
+  const [scene, setScene] = useState<React.ReactNode>(children);
 
-  const entities = useRef<EntityContext[]>([]);
+  const entities = useRef<IEntity[]>([]);
   const input = useInputSystem();
-  const stages = useRef<Stage[]>([]);
-  const systems = useRef<System[]>([]);
+  const systems = useRef<SystemFunction[]>([]);
   const updates = useRef<UpdateSubscriber[]>([]);
 
-  const getEntities = <T,>(components: Comp<T>[]) => {
-    const entitiesWithComponents = entities.current?.filter((entity) => {
-      const hasAllComponent = components?.every((value) =>
-        entity.components.has(value._symbol)
-      );
-      return hasAllComponent;
-    });
-    return entitiesWithComponents as EntityWith<T>[];
+  const getEntities = () => {
+    return entities.current;
   };
 
-  const addEntity = (entity: EntityContext) => {
+  const addEntity = (entity: IEntity) => {
     entities.current = [...entities.current, entity];
   };
 
-  const removeEntity = (entity: EntityContext) => {
+  const removeEntity = (entity: IEntity) => {
     entities.current = entities.current.filter((e) => e !== entity);
   };
 
-  const addStage = (stage: Stage) => {
-    stages.current = [...stages.current, stage];
+  const removeE = (entity: React.ReactNode) => {
+    // entities.current = entities.current.filter((e) => e !== entity);
   };
 
-  const removeStage = (stage: Stage) => {
-    stages.current = stages.current.filter((s) => s !== stage);
+  const changeScene = (scene: React.ReactNode) => {
+    setScene(scene);
   };
 
-  const addSystem = (system: System) => {
+  const addSystem = (system: SystemFunction) => {
     systems.current = [...systems.current, system];
   };
 
-  const removeSystem = (system: System) => {
+  const removeSystem = (system: SystemFunction) => {
     systems.current = systems.current.filter((s) => s !== system);
   };
 
@@ -118,8 +100,7 @@ export function Game(props: GameProps) {
 
         systems.current.forEach((system) => {
           // pass only entities that have the components the system wants
-          const entities = getEntities(system.components);
-          system.run(entities as EntityWith<any>[], FRAME_MS);
+          system(entities.current, FRAME_MS);
         });
 
         // update entities
@@ -159,9 +140,11 @@ export function Game(props: GameProps) {
         addEntity,
         addSystem,
         addUpdate,
+        changeScene,
         getEntities,
         height: gameHeight ?? 480,
         removeEntity,
+        removeE,
         removeSystem,
         removeUpdate,
         width: gameWidth ?? 640,
@@ -187,7 +170,7 @@ export function Game(props: GameProps) {
             width: "100%",
           }}
         >
-          {children}
+          {scene}
         </div>
       </div>
     </GameContext.Provider>
@@ -215,6 +198,22 @@ export function useGameStore() {
       "Game hooks can only be used within the <Game /> component."
     );
   return store;
+}
+
+export function useQuery<T extends Component<any, any>[]>(...components: T) {
+  const context = useGame();
+  if (!context) {
+    throw new Error(
+      "Game hooks can only be used within the <Game /> component."
+    );
+  }
+  return {
+    get: () => {
+      return context.getEntities().filter((e) => {
+        return components.every((c) => e.components[c.name] != null);
+      }) as IEntity<T>[];
+    },
+  };
 }
 
 const initialInputState = {
@@ -361,44 +360,106 @@ export function useInputSystem() {
   return inputRef;
 }
 
-export const EntityContext = createContext<EntityContext>(null);
-export interface EntityContext {
-  _id: string;
-  components: Map<symbol, [any, Dispatch<any>]>;
-  getComponent: <T>(component: Comp<T>) => [T, Dispatch<T>];
+export function useSceneManager() {
+  const game = useGame();
+  if (!game) {
+    throw new Error("You can only call useSceneManager in a <Game /> context.");
+  }
+
+  return {
+    change: (scene: React.ReactNode) => {
+      game.changeScene(scene);
+    },
+  };
 }
-type EntityWith<T> = EntityContext & {
-  components: { [key in Comp<T>["_symbol"]]: T };
-};
+
+export function useEntityManager() {
+  const game = useGame();
+  if (!game) {
+    throw new Error(
+      "You can only call useEntityManager in a <Game /> context."
+    );
+  }
+
+  return {
+    remove: (entity: React.ReactNode) => {
+      console.log("remove", entity);
+      game.removeE(entity);
+    },
+  };
+}
+
+// this type is magic!
+export type EntityComponentsMap<T extends Component<any, any>[]> =
+  T extends undefined
+    ? any
+    : {
+        [Key in `${number}` &
+          keyof T as T[Key]["name"]]: T[Key]["type"] extends Function
+          ? // Readonly<T[Key]["type"]> somehow removes call signatures,
+            // so functions being stored here will not be callable despite
+            // not being modified. cf. https://github.com/microsoft/TypeScript/issues/32566
+            Function
+          : Readonly<T[Key]["type"]>;
+      };
+export const EntityContext = createContext<IEntity>(null);
+export interface IEntity<T extends Component<any, any>[] = any> {
+  _id: string;
+  _state: Record<PropertyKey, [any, Dispatch<any>]>;
+  components: EntityComponentsMap<T>;
+  update: <K extends string, T>(
+    componentType: Component<K, T>,
+    data: T
+  ) => void;
+  has: (...components: T[]) => boolean;
+}
 export interface EntityProps extends PropsWithChildren {}
-export const Entity = forwardRef<EntityContext, EntityProps>(function Entity(
+export const Entity = forwardRef<IEntity, EntityProps>(function Entity(
   { children },
   ref
 ) {
-  const entityRef = useRef<EntityContext>({
+  const entityRef = useRef<IEntity>({
     _id: crypto.randomUUID(),
-    components: new Map(),
-    getComponent: null,
+    _state: {},
+    components: {},
+    update: null,
+    has: null,
   });
 
-  const getComponent = <T,>(component: Comp<T>) => {
-    const c = entityRef.current.components.get(component._symbol);
-    if (!c) {
+  const has = <T extends Component<any, any>[]>(...components: T) => {
+    for (const component of components) {
+      if (entityRef.current.components[component.name] == null) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+  entityRef.current.has = has;
+
+  const update = <K extends string, T>(
+    componentType: Component<K, T>,
+    data: T
+  ) => {
+    const component = entityRef.current._state[componentType.name];
+    if (!component) {
       console.warn(
-        `Entity ${entityRef.current._id} does not have component ${component._symbol.description}`
+        `Entity ${entityRef.current._id} does not have component ${componentType.name}`
       );
       return;
     }
-    return c as [T, Dispatch<T>];
+
+    const [, setState] = component;
+    setState(data);
   };
-  entityRef.current.getComponent = getComponent;
+  entityRef.current.update = update;
   useImperativeHandle(ref, () => entityRef.current);
 
-  const store = useGame();
+  const game = useGame();
   useEffect(() => {
-    store.addEntity(entityRef.current);
+    game.addEntity(entityRef.current);
     return () => {
-      store.removeEntity(entityRef.current);
+      game.removeEntity(entityRef.current);
     };
   }, []);
 
@@ -409,25 +470,19 @@ export const Entity = forwardRef<EntityContext, EntityProps>(function Entity(
   );
 });
 
-// hooks
-export function useSystem(callback: SystemFunction, components?: Comp<any>[]) {
-  // make sure users aren't using systems inside entities
-  const entity = useContext(EntityContext);
-  if (entity) {
-    throw Error("useNewSystem cannot be used within an Entity.");
+export type SystemFunction = (entites: IEntity[], delta: number) => void;
+export function useSystem(callback: SystemFunction) {
+  const gameContext = useGame();
+  if (!gameContext) {
+    throw Error("useSystem must be used inside a <Game /> context.");
   }
 
-  const gameContext = useGame();
   const memoCallback = useCallback(callback, []);
-  const systemSubscriber = useRef<System>({
-    components,
-    run: memoCallback,
-  });
 
   useEffect(() => {
-    gameContext.addSystem(systemSubscriber.current);
+    gameContext.addSystem(memoCallback);
     return () => {
-      gameContext.removeSystem(systemSubscriber.current);
+      gameContext.removeSystem(memoCallback);
     };
   }, [callback, gameContext]);
 }
@@ -454,36 +509,45 @@ export function useUpdate(
   }, [callback, gameContext]);
 }
 
-export function useEntity() {
+export function useEntity<T extends Component<any, any>[] = []>() {
   const context = useContext(EntityContext);
   if (!context) {
-    console.warn("Game hooks must be used inside a <Game /> element.");
+    console.warn("useEntity must be used inside a <Entity /> context.");
   }
-  return context;
+  return context as IEntity<T>;
 }
 
-type Comp<T> = {
-  _symbol: symbol;
-  _defaultValue: T;
+export type Component<K extends string, T> = {
+  readonly name: K;
+  readonly type: T;
 };
-export function createComponent<T>(defaultValue: T) {
+
+export function createComponent<K extends string, T>(
+  name: K,
+  type: T
+): Component<K, T> {
   return {
-    _symbol: Symbol("react-gamin.component"),
-    _defaultValue: defaultValue,
-  } as Comp<T>;
+    name,
+    type,
+  };
 }
-export function useComponent<T>(component: Comp<T>, intialValue?: T) {
-  const entity = useEntity();
-  const state = useState(intialValue ?? component._defaultValue);
+
+export function useComponent<K extends string, T>(name: K, intialValue?: T) {
+  const entity = useEntity<[any]>();
+  //                         ^
+  // TODO: This is a hack I'm already seeing too often
+
+  // passing useState() a function that returns the initial value will
+  // ensure components can store functions as state as well, instead of
+  // useState() interpretting the function as a state setter
+  const [state, setState] = useState(() => intialValue);
 
   useEffect(() => {
-    entity.components.set(component._symbol, state);
-    return () => {
-      entity.components.delete(component._symbol);
-    };
-  }, [entity, state]);
+    entity.components[name] = state;
+    entity._state[name] = [state, setState];
+  }, [state]);
 
-  return state;
+  return [state, setState] as [T, Dispatch<T>];
 }
 
 // default components
@@ -492,14 +556,15 @@ export interface Transform {
   y: number;
   z: number;
 }
-export const TransformComponent = createComponent<Transform>({
+
+export const TransformComponent = createComponent("transform", {
   x: 0,
   y: 0,
   z: 0,
 });
+
 export function useTransformComponent(initialValue?: Transform) {
-  const componentState = useComponent(TransformComponent, initialValue);
-  return componentState;
+  return useComponent("transform", initialValue);
 }
 
 export interface Velocity {
@@ -507,22 +572,27 @@ export interface Velocity {
   dy: number;
   dz: number;
 }
-export const VelocityComponent = createComponent<Velocity>({
+
+export const VelocityComponent = createComponent("velocity", {
   dx: 0,
   dy: 0,
   dz: 0,
 });
+
 export function useVelocityComponent(initialValue?: Velocity) {
-  const componentState = useComponent(VelocityComponent, initialValue);
-  return componentState;
+  return useComponent("velocity", initialValue);
 }
 
 export interface Body {
   height: number;
   width: number;
 }
-export const BodyComponent = createComponent<Body>({ height: 10, width: 10 });
+
+export const BodyComponent = createComponent("body", {
+  width: 100,
+  height: 100,
+});
+
 export function useBodyComponent(initialValue?: Body) {
-  const componentState = useComponent(BodyComponent, initialValue);
-  return componentState;
+  return useComponent("body", initialValue);
 }
