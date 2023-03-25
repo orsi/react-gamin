@@ -8,9 +8,8 @@ import {
   useLayoutEffect,
   useContext,
   useCallback,
-  Fragment,
 } from "react";
-import { IEntity, EntityContext, Component } from "./entities";
+import { IEntity, Component } from "./entities";
 import { useInputSystem, InputState } from "./input";
 
 export type GameContext = {
@@ -165,7 +164,9 @@ export function useUpdate(
 ) {
   const game = useGame();
   if (!game) {
-    throw Error("useUpdate must be used inside <Game />.");
+    throw new Error(
+      "Game hooks can only be used within the <Game /> component."
+    );
   }
 
   const memoCallback = useCallback(callback, [dependencies]);
