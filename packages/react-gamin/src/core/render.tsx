@@ -19,12 +19,14 @@ export function getSpriteStyles(
   spriteHeight?: number,
   spriteIndex?: number,
   reversed = false,
-  flipped = false
+  flipped = false,
+  scale = 1
 ) {
   const style: CSSProperties = {
     left: "0",
     position: "relative",
     top: "0",
+    transform: ``,
   };
 
   if (x != null && y != null) {
@@ -61,11 +63,17 @@ export function getSpriteStyles(
     style.transform = `${style.transform} rotateX(180deg)`;
   }
 
+  if (scale) {
+    style.transform = `${style.transform} scale(${scale})`;
+    style.imageRendering = `crisp-edges`;
+  }
+
   return style;
 }
 
 export interface SpriteProps extends HTMLProps<HTMLImageElement> {
   alt?: string;
+  scale?: number;
   src: string;
   x?: number;
   y?: number;
@@ -82,6 +90,7 @@ export function Sprite({
   animations,
   reversed,
   flipped,
+  scale,
   selectedAnimation,
   selectedSprite,
   sheet,
@@ -159,7 +168,8 @@ export function Sprite({
     sheet?.height,
     currentSprite,
     reversed,
-    flipped
+    flipped,
+    scale
   );
 
   return (
@@ -289,7 +299,7 @@ export function SpriteCanvas({ src, sheet, sprites }: SpriteCanvasProps) {
         }
       }
     });
-  }, []);
+  });
 
   return <canvas ref={ref} />;
 }
