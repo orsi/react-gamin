@@ -1,5 +1,5 @@
-import { HTMLProps, useEffect, useRef, useState } from 'react';
-import { Sheet, getSpriteStyles, useAudio, useKey } from 'react-gamin';
+import { useState } from 'react';
+import { AnimatedSprite, Sprite, useAudio, useKey } from 'react-gamin';
 
 export default function App() {
   const [position, setPosition] = useState({ x: 500, y: 200, z: 0 });
@@ -81,151 +81,34 @@ export default function App() {
 
   return (
     <>
-      <Sprite
+      <AnimatedSprite
         position={position}
-        rotation={rotation}
-        scale={scale}
-        src="/monster-sprite.png"
+        sprites={[
+          {
+            src: '/monster-sprite.png',
+          },
+          {
+            height: 64,
+            src: '/monster-sprite-1.png',
+          },
+          {
+            height: 72,
+            src: '/monster-sprite-2.png',
+          },
+          {
+            height: 96,
+            src: '/monster-sprite-3.png',
+          },
+        ]}
       />
       <Sprite
         position={{
           x: Math.random() * 500,
           y: Math.random() * 500,
           z: Math.random() * 500,
-        }}
-        rotation={{
-          x: Math.random() * 500,
-          y: Math.random() * 500,
-          z: Math.random() * 500,
-          deg: Math.random() * 360,
-        }}
-        scale={{
-          x: Math.random() * 5,
-          y: Math.random() * 5,
-          z: Math.random() * 5,
-        }}
-        perspective={Math.random() * 100}
-        skew={{
-          x: Math.random() * 360,
-          y: Math.random() * 360
-        }}
-        src="/monster-sprite.png"
-      />
-      <Sprite
-        position={{
-          x: Math.random() * 500,
-          y: Math.random() * 500,
-          z: Math.random() * 500,
-        }}
-        rotation={{
-          x: Math.random() * 500,
-          y: Math.random() * 500,
-          z: Math.random() * 500,
-          deg: Math.random() * 360,
-        }}
-        scale={{
-          x: Math.random() * 5,
-          y: Math.random() * 5,
-          z: Math.random() * 5,
-        }}
-        perspective={Math.random() * 100}
-        skew={{
-          x: Math.random() * 360,
-          y: Math.random() * 360
-        }}
-        src="/monster-sprite.png"
-      />
-      <Sprite
-        position={{
-          x: Math.random() * 500,
-          y: Math.random() * 500,
-          z: Math.random() * 500,
-        }}
-        rotation={{
-          x: Math.random() * 500,
-          y: Math.random() * 500,
-          z: Math.random() * 500,
-          deg: Math.random() * 360,
-        }}
-        scale={{
-          x: Math.random() * 5,
-          y: Math.random() * 5,
-          z: Math.random() * 5,
-        }}
-        perspective={Math.random() * 100}
-        skew={{
-          x: Math.random() * 360,
-          y: Math.random() * 360
         }}
         src="/monster-sprite.png"
       />
     </>
   );
-}
-
-export interface SpriteProps extends HTMLProps<HTMLImageElement> {
-  src: string;
-  // optional
-  perspective?: number;
-  position?: {
-    x: number;
-    y: number;
-    z: number;
-  };
-  rotation?: {
-    x: number;
-    y: number;
-    z: number;
-    deg: number;
-  };
-  scale?: {
-    x: number;
-    y: number;
-    z: number;
-  };
-  skew?: {
-    x: number;
-    y: number;
-  };
-}
-export function Sprite({
-  perspective,
-  position,
-  rotation,
-  scale,
-  skew,
-  src,
-  ...props
-}: SpriteProps) {
-  const style: React.CSSProperties = {
-    position: 'absolute',
-  };
-
-  const transforms = [];
-  if (perspective != null) {
-    transforms.push(`perspective(${perspective})`);
-  }
-
-  if (position != null) {
-    transforms.push(`translate(${position.x}px, ${position.y}px)`);
-    style.zIndex = `${position.z}`;
-  }
-
-  if (rotation != null) {
-    transforms.push(
-      `rotate3d(${rotation.x}, ${rotation.y}, ${rotation.z}, ${rotation.deg}deg)`
-    );
-  }
-
-  if (scale != null) {
-    transforms.push(`scale3d(${scale.x}, ${scale.y}, ${scale.z})`);
-  }
-
-  if (skew != null) {
-    transforms.push(`skew(${skew.x}deg, ${skew.y}deg)`);
-  }
-
-  style.transform = transforms.join(' ');
-
-  return <img src={src} style={style} {...props} />;
 }
