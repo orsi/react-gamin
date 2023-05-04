@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { AnimatedSprite, Sprite, useAudio, useKey } from 'react-gamin';
+import { useState } from "react";
+import { AnimatedSprite, Sprite, useAudio, useKey } from "react-gamin";
 
 export default function App() {
   const [position, setPosition] = useState({ x: 500, y: 200, z: 0 });
@@ -7,11 +7,11 @@ export default function App() {
   const [scale, setScale] = useState({ x: 1, y: 2, z: 0.5 });
 
   // audio
-  const sample = useAudio('/beep-03.wav');
-  const satie = useAudio('/Gymnopedie_No._1.mp3');
+  const sample = useAudio("/beep-03.wav");
+  const satie = useAudio("/Gymnopedie_No._1.mp3");
 
   useKey(
-    'w',
+    "w",
     () => {
       satie.play();
       setPosition({
@@ -23,7 +23,7 @@ export default function App() {
   );
 
   useKey(
-    's',
+    "s",
     () => {
       satie.stop();
       setPosition({
@@ -35,7 +35,7 @@ export default function App() {
   );
 
   useKey(
-    'a',
+    "a",
     () => {
       sample.play();
       setPosition({
@@ -58,7 +58,7 @@ export default function App() {
   );
 
   useKey(
-    'd',
+    "d",
     () => {
       setPosition({
         ...position,
@@ -85,29 +85,21 @@ export default function App() {
         position={position}
         sprites={[
           {
-            src: '/monster-sprite.png',
+            src: "/monster-sprite.png",
           },
           {
             height: 64,
-            src: '/monster-sprite-1.png',
+            src: "/monster-sprite-1.png",
           },
           {
             height: 72,
-            src: '/monster-sprite-2.png',
+            src: "/monster-sprite-2.png",
           },
           {
             height: 96,
-            src: '/monster-sprite-3.png',
+            src: "/monster-sprite-3.png",
           },
         ]}
-      />
-      <Sprite
-        position={{
-          x: Math.random() * 500,
-          y: Math.random() * 500,
-          z: Math.random() * 500,
-        }}
-        src="/monster-sprite.png"
       />
     </>
   );
