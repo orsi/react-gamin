@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { AnimatedSprite, Sprite, useAudio, useKey } from "react-gamin";
+import {
+  AnimatedSpriteSheet,
+  useAudio,
+  useKey,
+} from "react-gamin";
 
 export default function App() {
   const [position, setPosition] = useState({ x: 500, y: 200, z: 0 });
@@ -81,25 +85,43 @@ export default function App() {
 
   return (
     <>
-      <AnimatedSprite
+      <AnimatedSpriteSheet
         position={position}
-        sprites={[
-          {
-            src: "/monster-sprite.png",
+        src="/monster-sprite-sheet.png"
+        animation="walk"
+        animations={{
+          walk: [
+            {
+              sprite: "sprite1",
+            },
+            {
+              sprite: "sprite2",
+            },
+            {
+              sprite: "sprite3",
+            },
+          ],
+        }}
+        sprites={{
+          sprite1: {
+            x: 0,
+            y: 0,
+            width: 24,
+            height: 32,
           },
-          {
-            height: 64,
-            src: "/monster-sprite-1.png",
+          sprite2: {
+            x: 24,
+            y: 0,
+            width: 24,
+            height: 32,
           },
-          {
-            height: 72,
-            src: "/monster-sprite-2.png",
+          sprite3: {
+            x: 48,
+            y: 0,
+            width: 24,
+            height: 32,
           },
-          {
-            height: 96,
-            src: "/monster-sprite-3.png",
-          },
-        ]}
+        }}
       />
     </>
   );
