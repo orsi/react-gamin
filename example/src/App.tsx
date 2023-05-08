@@ -1,34 +1,30 @@
-import {
-  Dispatch,
-  Fragment,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   AnimatedSpriteSheet,
   Game,
-  SetState,
+  OtherSystem,
   Sprite,
-  useSystem,
+  TestSystem,
   useAudio,
   useKey,
+  useOtherSystem,
   useScript,
-  GameContext,
+  useTestSystem,
 } from "react-gamin";
 
 export default function App() {
   const [entities, setEntities] = useState([<TheGuy />, <TheOtherGuy />]);
 
+  const removeDude = ({ key }: KeyboardEvent) => {
+    if (key === "1") {
+      setEntities([...entities.slice(0, -1)]);
+    }
+  };
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      // entities.pop();
-      // setEntities([...entities]);
-    }, 2000);
+    window.addEventListener("keyup", removeDude);
     return () => {
-      clearInterval(interval);
+      window.removeEventListener("keyup", removeDude);
     };
   }, [entities]);
 
@@ -41,7 +37,7 @@ export default function App() {
         setEntities([...entities, <TheOtherGuy />]);
       }}
     >
-      <Game development>
+      <Game development systems={[TestSystem, OtherSystem]}>
         {entities.map((e, index) => (
           <Fragment key={index}>{e}</Fragment>
         ))}
@@ -49,37 +45,6 @@ export default function App() {
     </div>
   );
 }
-
-const useMoveSystem = <T extends { x: number; y: number; z: number }>(
-  position: T
-) => {
-  const gameContext = useContext(GameContext);
-
-  const move = (direction: "left" | "up") => {
-    const positions = gameContext["move"].filter((i) => i !== position);
-    const canMove =
-      direction === "left" &&
-      positions.every((p) => {
-        return p.x + 30 < position.x;
-      });
-
-    return canMove;
-  };
-
-  useEffect(() => {
-    if (gameContext["move"] == null) {
-      gameContext["move"] = [];
-    }
-    gameContext["move"] = [...gameContext["move"], position];
-    return () => {
-      const index = gameContext["move"].findIndex((i: T) => i === position);
-      gameContext["move"].splice(index, 1);
-      gameContext["move"] = [...gameContext["move"]];
-    };
-  }, [position]);
-
-  return move;
-};
 
 function TheOtherGuy() {
   const [id] = useState(crypto.randomUUID());
@@ -89,10 +54,10 @@ function TheOtherGuy() {
     z: 0,
   });
 
-  useMoveSystem(position);
-
-  useScript(() => {
-    // console.log("word", id);
+  useOtherSystem(id);
+  useTestSystem(position);
+  useScript((time) => {
+    // console.log("word", time, id);
   });
 
   return (
@@ -118,18 +83,17 @@ function TheGuy() {
   const [rotation, setRotation] = useState({ x: 0.5, y: 0.5, z: 0, deg: 45 });
   const [scale, setScale] = useState({ x: 1, y: 2, z: 0.5 });
 
-  const move = useMoveSystem(position);
+  // useTestSystem(position, "hi");
+  const test = useTestSystem(position);
 
   // audio
   const sample = useAudio("/beep-03.wav");
   const satie = useAudio("/Gymnopedie_No._1.mp3");
   useKey("w", () => {
-    if (move("up")) {
-      setPosition((position) => ({
-        ...position,
-        y: position.y - 5,
-      }));
-    }
+    setPosition((position) => ({
+      ...position,
+      y: position.y - 5,
+    }));
   });
 
   useKey("s", () => {
@@ -140,7 +104,7 @@ function TheGuy() {
   });
 
   useKey("a", () => {
-    if (move("left")) {
+    if (!test()) {
       setPosition((position) => ({
         ...position,
         x: position.x - 5,

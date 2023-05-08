@@ -1,5 +1,5 @@
 import { useRef, useEffect, useContext, useCallback } from "react";
-import { GameContext } from "./core";
+import { GameContext, useGame } from "./core";
 
 export const FPS_60_MS = 1000 / 60;
 
@@ -143,36 +143,37 @@ export type KeyboardKey = keyof typeof KEYBOARD_KEY_CODES;
 export type KeyboardCode =
   (typeof KEYBOARD_KEY_CODES)[keyof typeof KEYBOARD_KEY_CODES];
 
-export const useKey = (target: KeyboardKey, listener: () => void) => {
-  const gameContext = useContext(GameContext);
-  if (gameContext == null) {
-    throw Error("No game :(.");
-  }
-
+export const useKey = (target: KeyboardKey, input: () => void) => {
+  const game = useGame();
   const keyDownRef = useRef(false);
   const requestAnimationFrameRef = useRef(0);
 
-  const update = () => {
+  const update = useCallback(() => {
     if (
-      keyDownRef.current &&
-      !gameContext.input.some((i: () => void) => i === listener)
+      keyDownRef.current
     ) {
-      gameContext.input.push(listener);
+      game.addInput(input);
     }
     requestAnimationFrameRef.current = requestAnimationFrame(update);
-  };
+  }, [game, input]);
 
-  const onKeydown = ({ code, key }: KeyboardEvent) => {
-    if (key === target) {
-      keyDownRef.current = true;
-    }
-  };
+  const onKeydown = useCallback(
+    ({ code, key }: KeyboardEvent) => {
+      if (key === target) {
+        keyDownRef.current = true;
+      }
+    },
+    [target]
+  );
 
-  const onKeyup = ({ code, key }: KeyboardEvent) => {
-    if (key === target) {
-      keyDownRef.current = false;
-    }
-  };
+  const onKeyup = useCallback(
+    ({ code, key }: KeyboardEvent) => {
+      if (key === target) {
+        keyDownRef.current = false;
+      }
+    },
+    [target]
+  );
 
   useEffect(() => {
     window.addEventListener("keydown", onKeydown);
@@ -183,7 +184,7 @@ export const useKey = (target: KeyboardKey, listener: () => void) => {
       window.removeEventListener("keyup", onKeyup);
       cancelAnimationFrame(requestAnimationFrameRef.current);
     };
-  }, [listener]);
+  }, [input]);
 };
 
 // cf. https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button#value

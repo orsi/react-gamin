@@ -222,7 +222,14 @@ export function AnimatedSpriteSheet<
     return () => {
       cancelAnimationFrame(requestAnimationFrameRef.current);
     };
-  }, [animations, animation, currentAnimationFrameIndex, frameLengthMs, loop, play]);
+  }, [
+    animations,
+    animation,
+    currentAnimationFrameIndex,
+    frameLengthMs,
+    loop,
+    play,
+  ]);
 
   return (
     <SpriteSheet
@@ -230,5 +237,43 @@ export function AnimatedSpriteSheet<
       sprites={sprites}
       {...props}
     />
+  );
+}
+
+interface DevelopmentProps {
+  frameDeltasRef: React.MutableRefObject<number[]>;
+}
+export function Development({ frameDeltasRef }: DevelopmentProps) {
+  const [output, setOutput] = useState("");
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOutput(
+        `~${Math.round(
+          1000 /
+            (frameDeltasRef.current.reduce((acc, time) => acc + time, 0) /
+              frameDeltasRef.current.length)
+        )} fps`
+      );
+    }, 1000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  return (
+    <div
+      style={{
+        bottom: `0px`,
+        padding: `12px`,
+        position: "absolute",
+        right: `0px`,
+      }}
+    >
+      <div>Dev Output</div>
+      <div>
+        <small>{output}</small>
+      </div>
+    </div>
   );
 }

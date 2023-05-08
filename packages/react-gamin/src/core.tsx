@@ -1,4 +1,3 @@
-import { useCallback, useState } from "react";
 import {
   createContext,
   Dispatch,
@@ -6,41 +5,47 @@ import {
   useContext,
   useEffect,
   useRef,
+  useState,
 } from "react";
+import { Development } from "./components";
 
 export type SetState<T> = Dispatch<React.SetStateAction<T>>;
+
+export type System<T> = {
+  system: (time: number, components: T[]) => void;
+  components: T[];
+};
 
 const RAF_DELAY = 1000 / 30;
 
 export type GameContext = {
-  input: any[];
-  systems: Record<string, any[]>;
-  scripts: (() => void)[];
+  addInput: Function;
+  addComponent: Function;
+  addScript: Function;
 };
-export const GameContext = createContext<Record<string, any>>(null);
+export const GameContext = createContext<GameContext>(null);
 export interface GameProps extends PropsWithChildren {
   development?: boolean;
+  systems: System<any>[];
 }
-export function Game({ children, development = false }: GameProps) {
+export function Game<T>({ children, development = false, systems }: GameProps) {
+  // sanity check!
   const gameContext = useContext(GameContext);
   if (gameContext != null) {
     throw Error("Why is there a game in a game?!?");
   }
 
-  const store = useRef<GameContext>({
-    input: [],
-    systems: {},
-    scripts: [],
-  });
-  const [devString, setDevString] = useState(``);
-
+  const inputs = useRef([]);
+  const scripts = useRef([]);
+  const state = useRef<any>({});
   const lastUpdateRef = useRef(0);
-  const frameDeltasRef = useRef([]);
+  const frameDeltasRef = useRef<number[]>([]);
   const requestAnimationFrameRef = useRef(0);
 
   // game loop
-  const update = useCallback(
-    (time: number) => {
+
+  useEffect(() => {
+    const update = (time: number) => {
       const delta = time - lastUpdateRef.current;
 
       frameDeltasRef.current.push(delta);
@@ -49,93 +54,98 @@ export function Game({ children, development = false }: GameProps) {
       }
 
       if (delta > RAF_DELAY) {
-        setDevString(
-          `${Math.round(
-            1000 /
-              (frameDeltasRef.current.reduce((acc, time) => acc + time, 0) /
-                frameDeltasRef.current.length)
-          )}`
-        );
         // update order
         // input => systems => scripts
 
-        // execute input
-        for (let i = 0; i < store.current.input.length; ++i) {
-          store.current.input[i]();
+        // execute and clear inputs
+        for (const input of inputs.current) {
+          input(time);
         }
-        store.current.input = [];
+        inputs.current = [];
 
         // run systems
-        for (const key of Object.keys(store.current.systems)) {
-          for (const callback of store.current.systems[key]) {
-            callback(time);
-          }
+        for (const system of systems) {
+          system.system(time, system.components);
         }
 
         // component scripts
-        for (let i = 0; i < store.current.scripts.length; ++i) {
-          store.current.scripts[i]();
+        for (const script of scripts.current) {
+          script(time);
         }
 
         lastUpdateRef.current = time;
       }
 
       requestAnimationFrameRef.current = requestAnimationFrame(update);
-    },
-    [lastUpdateRef, requestAnimationFrameRef, store]
-  );
-  useEffect(() => {
+    };
+
     requestAnimationFrameRef.current = requestAnimationFrame(update);
     return () => {
       cancelAnimationFrame(requestAnimationFrameRef.current);
     };
-  }, [update]);
+  }, [systems]);
+
+  const addInput = (input: () => void) => {
+    if (!inputs.current.some((i: () => void) => i === input)) {
+      inputs.current.push(input);
+    }
+  };
+  const addComponent = <T,>(system: System<T>, component: T) => {
+    useEffect(() => {
+      system.components.push(component);
+      return () => {
+        const index = system.components.findIndex((i: any) => i === component);
+        system.components.splice(index, 1);
+      };
+    }, [system, component]);
+  };
+  const addScript = (script: () => void) => {
+    useEffect(() => {
+      scripts.current = [...scripts.current, script];
+      return () => {
+        const index = scripts.current.findIndex((i: any) => i === script);
+        scripts.current.splice(index, 1);
+      };
+    }, [script]);
+  };
 
   return (
-    <GameContext.Provider value={store.current}>
-      {development && (
-        <span
-          style={{
-            bottom: `0px`,
-            padding: `12px`,
-            position: "absolute",
-            right: `0px`,
-          }}
-        >
-          {devString}
-        </span>
-      )}
+    <GameContext.Provider
+      value={{
+        addInput,
+        addComponent,
+        addScript,
+      }}
+    >
+      {development && <Development frameDeltasRef={frameDeltasRef} />}
       {children}
     </GameContext.Provider>
   );
 }
 
-export function useSystem(name: string, callback: () => void) {
-  const gameContext = useContext(GameContext);
-
-  useEffect(() => {
-    let callbacks = gameContext.systems[name];
-    if (callbacks == null) {
-      callbacks = [];
-    }
-    gameContext.systems[name] = [...callbacks, callback];
-    return () => {
-      const index = gameContext.systems[name].findIndex(
-        (i: () => void) => i === callback
-      );
-      gameContext.systems[name].splice(index, 1);
-    };
-  }, [callback]);
+export function createSystem<T>(
+  system: (time: number, components: T[]) => void
+): System<T> {
+  return {
+    system,
+    components: [],
+  };
+}
+export function useGame() {
+  const context = useContext(GameContext);
+  if (!context) {
+    throw Error("No game context!");
+  }
+  return context;
 }
 
-export function useScript<T>(fn: (args?: T) => void) {
-  const gameContext = useContext(GameContext);
+export function useSystem<T>(system: System<T>, component: T) {
+  const { addComponent } = useGame();
+  addComponent(system, component);
+  return system.components;
+}
 
-  useEffect(() => {
-    gameContext.scripts = [...gameContext.scripts, fn];
-    return () => {
-      const index = gameContext.scripts.findIndex((i: any) => i === fn);
-      gameContext.scripts.splice(index, 1);
-    };
-  }, [fn]);
+export function useScript(script: (time?: number) => void) {
+  const { addScript } = useGame();
+  addScript(script);
 }
