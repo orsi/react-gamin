@@ -270,7 +270,7 @@ export function Development({ frameDeltasRef }: DevelopmentProps) {
         right: `0px`,
       }}
     >
-      <div>Dev Output</div>
+      <div>Diagnostics</div>
       <div>
         <small>{output}</small>
       </div>

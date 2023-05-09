@@ -1,5 +1,6 @@
 import {
   createContext,
+  CSSProperties,
   Dispatch,
   PropsWithChildren,
   useContext,
@@ -12,23 +13,36 @@ import { Development } from "./components";
 export type SetState<T> = Dispatch<React.SetStateAction<T>>;
 
 export type System<T> = {
-  system: (time: number, components: T[]) => void;
+  system: (time: number, components: T[], state: GameContext["state"]) => void;
   components: T[];
 };
 
 const RAF_DELAY = 1000 / 30;
 
-export type GameContext = {
+export type GameState<T = {}> = {
+  height: number;
+  width: number;
+} & T;
+export type GameContext<T = {}> = {
   addInput: Function;
   addComponent: Function;
   addScript: Function;
+  state: GameState<T>;
 };
 export const GameContext = createContext<GameContext>(null);
 export interface GameProps extends PropsWithChildren {
   development?: boolean;
-  systems: System<any>[];
+  fps?: number;
+  systems?: System<any>[];
+  style?: CSSProperties;
 }
-export function Game<T>({ children, development = false, systems }: GameProps) {
+export function Game<T>({
+  children,
+  development = false,
+  fps = RAF_DELAY,
+  style,
+  systems = [],
+}: GameProps) {
   // sanity check!
   const gameContext = useContext(GameContext);
   if (gameContext != null) {
@@ -37,13 +51,15 @@ export function Game<T>({ children, development = false, systems }: GameProps) {
 
   const inputs = useRef([]);
   const scripts = useRef([]);
-  const state = useRef<any>({});
+  const [state, setState] = useState<GameState>({
+    height: null,
+    width: null,
+  });
   const lastUpdateRef = useRef(0);
   const frameDeltasRef = useRef<number[]>([]);
   const requestAnimationFrameRef = useRef(0);
 
   // game loop
-
   useEffect(() => {
     const update = (time: number) => {
       const delta = time - lastUpdateRef.current;
@@ -53,7 +69,7 @@ export function Game<T>({ children, development = false, systems }: GameProps) {
         frameDeltasRef.current.shift();
       }
 
-      if (delta > RAF_DELAY) {
+      if (delta > fps) {
         // update order
         // input => systems => scripts
 
@@ -65,7 +81,7 @@ export function Game<T>({ children, development = false, systems }: GameProps) {
 
         // run systems
         for (const system of systems) {
-          system.system(time, system.components);
+          system.system(time, system.components, state);
         }
 
         // component scripts
@@ -90,15 +106,20 @@ export function Game<T>({ children, development = false, systems }: GameProps) {
       inputs.current.push(input);
     }
   };
+
   const addComponent = <T,>(system: System<T>, component: T) => {
     useEffect(() => {
-      system.components.push(component);
+      const systemRef = systems.find((i) => i === system);
+      systemRef.components.push(component);
       return () => {
-        const index = system.components.findIndex((i: any) => i === component);
-        system.components.splice(index, 1);
+        const index = systemRef.components.findIndex(
+          (i: any) => i === component
+        );
+        systemRef.components.splice(index, 1);
       };
     }, [system, component]);
   };
+
   const addScript = (script: () => void) => {
     useEffect(() => {
       scripts.current = [...scripts.current, script];
@@ -109,22 +130,48 @@ export function Game<T>({ children, development = false, systems }: GameProps) {
     }, [script]);
   };
 
+  const containerRef = useRef<HTMLDivElement>();
+  useEffect(() => {
+    const setDimensions = () => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      setState({
+        ...state,
+        height: rect?.height,
+        width: rect?.width,
+      });
+    };
+    window.addEventListener("resize", setDimensions);
+    setDimensions();
+    return () => {
+      window.removeEventListener("resize", setDimensions);
+    };
+  }, []);
+
   return (
     <GameContext.Provider
       value={{
         addInput,
         addComponent,
         addScript,
+        state,
       }}
     >
-      {development && <Development frameDeltasRef={frameDeltasRef} />}
-      {children}
+      <div
+        ref={containerRef}
+        style={{
+          position: "relative",
+          ...style,
+        }}
+      >
+        {development && <Development frameDeltasRef={frameDeltasRef} />}
+        {children}
+      </div>
     </GameContext.Provider>
   );
 }
 
 export function createSystem<T>(
-  system: (time: number, components: T[]) => void
+  system: (time: number, components: T[], state: GameContext["state"]) => void
 ): System<T> {
   return {
     system,
@@ -139,10 +186,14 @@ export function useGame() {
   return context;
 }
 
+export function useGameState() {
+  const game = useGame();
+  return game.state;
+}
+
 export function useSystem<T>(system: System<T>, component: T) {
   const { addComponent } = useGame();
   addComponent(system, component);
-  return system.components;
 }
 
 export function useScript(script: (time?: number) => void) {
