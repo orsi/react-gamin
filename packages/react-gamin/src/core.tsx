@@ -1,4 +1,4 @@
-import {
+import React, {
   createContext,
   CSSProperties,
   Dispatch,
@@ -12,11 +12,6 @@ import { Development } from "./components";
 
 export type SetState<T> = Dispatch<React.SetStateAction<T>>;
 
-export type System<T> = {
-  system: (time: number, components: T[], state: GameContext["state"]) => void;
-  components: T[];
-};
-
 const RAF_DELAY = 1000 / 30;
 
 export type GameState<T = {}> = {
@@ -25,7 +20,7 @@ export type GameState<T = {}> = {
 } & T;
 export type GameContext<T = {}> = {
   addInput: Function;
-  addComponent: Function;
+  addSystem: Function;
   addScript: Function;
   state: GameState<T>;
 };
@@ -33,7 +28,7 @@ export const GameContext = createContext<GameContext>(null);
 export interface GameProps extends PropsWithChildren {
   development?: boolean;
   fps?: number;
-  systems?: System<any>[];
+  systems?: (({ children }: PropsWithChildren) => React.JSX.Element)[];
   style?: CSSProperties;
 }
 export function Game<T>({
@@ -50,6 +45,7 @@ export function Game<T>({
   }
 
   const inputs = useRef([]);
+  const systemFunctions = useRef([]);
   const scripts = useRef([]);
   const [state, setState] = useState<GameState>({
     height: null,
@@ -80,8 +76,8 @@ export function Game<T>({
         inputs.current = [];
 
         // run systems
-        for (const system of systems) {
-          system.system(time, system.components, state);
+        for (const system of systemFunctions.current) {
+          system(time);
         }
 
         // component scripts
@@ -107,17 +103,17 @@ export function Game<T>({
     }
   };
 
-  const addComponent = <T,>(system: System<T>, component: T) => {
+  const addSystem = (system: Function) => {
     useEffect(() => {
-      const systemRef = systems.find((i) => i === system);
-      systemRef.components.push(component);
+      systemFunctions.current = [...systemFunctions.current, system];
       return () => {
-        const index = systemRef.components.findIndex(
-          (i: any) => i === component
+        const index = systemFunctions.current.findIndex(
+          (i: Function) => i === system
         );
-        systemRef.components.splice(index, 1);
+        systemFunctions.current.splice(index, 1);
+        systemFunctions.current = [...systemFunctions.current];
       };
-    }, [system, component]);
+    }, [system]);
   };
 
   const addScript = (script: () => void) => {
@@ -147,37 +143,51 @@ export function Game<T>({
     };
   }, []);
 
+  const AllSystemContexts = systems.reduce(
+    (Systems, System) =>
+      ({ children }) =>
+        (
+          <System>
+            <Systems>{children}</Systems>
+          </System>
+        ),
+    ({ children }: PropsWithChildren) => <>{children}</>
+  );
+
   return (
     <GameContext.Provider
       value={{
         addInput,
-        addComponent,
+        addSystem: addSystem,
         addScript,
         state,
       }}
     >
-      <div
-        ref={containerRef}
-        style={{
-          position: "relative",
-          ...style,
-        }}
-      >
-        {development && <Development frameDeltasRef={frameDeltasRef} />}
-        {children}
-      </div>
+      <AllSystemContexts>
+        <div
+          ref={containerRef}
+          style={{
+            position: "relative",
+            ...style,
+          }}
+        >
+          {development && <Development frameDeltasRef={frameDeltasRef} />}
+          {children}
+        </div>
+      </AllSystemContexts>
     </GameContext.Provider>
   );
 }
 
 export function createSystem<T>(
   system: (time: number, components: T[], state: GameContext["state"]) => void
-): System<T> {
+): any {
   return {
     system,
     components: [],
   };
 }
+
 export function useGame() {
   const context = useContext(GameContext);
   if (!context) {
@@ -191,9 +201,9 @@ export function useGameState() {
   return game.state;
 }
 
-export function useSystem<T>(system: System<T>, component: T) {
-  const { addComponent } = useGame();
-  addComponent(system, component);
+export function useSystem<T>(system: (time?: number) => void) {
+  const { addSystem } = useGame();
+  addSystem(system);
 }
 
 export function useScript(script: (time?: number) => void) {

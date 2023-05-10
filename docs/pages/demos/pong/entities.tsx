@@ -1,6 +1,13 @@
 import React, { useState } from "react";
-import { useGame, useGameState } from "react-gamin";
-import { PADDLE_SPEED, BALL_SPEED, useBallMovementSystem } from "./systems";
+import { useGameState, useKey } from "react-gamin";
+import {
+  PADDLE_SPEED,
+  BALL_SPEED,
+  useBallMovementSystem,
+  useOpponentAISystem,
+  useCollisionSystem,
+  useScoreSystem,
+} from "./systems";
 
 export function Divider() {
   const { width } = useGameState();
@@ -20,8 +27,16 @@ export function Divider() {
 }
 
 export function PlayerScore({ x }: { x: number }) {
-  const [score] = useState(0);
-  //   const player = useComponent("player");
+  const [score, setScore] = useState(0);
+
+  useScoreSystem({
+    id: "playerScore",
+    components: {
+      score,
+      setScore,
+    },
+  });
+
   return (
     <div
       style={{
@@ -37,8 +52,16 @@ export function PlayerScore({ x }: { x: number }) {
 }
 
 export function OpponentScore({ x }: { x: number }) {
-  const [score] = useState(0);
-  //   const opponent = useComponent("opponent");
+  const [score, setScore] = useState(0);
+
+  useScoreSystem({
+    id: "opponentScore",
+    components: {
+      score,
+      setScore,
+    },
+  });
+
   return (
     <div
       style={{
@@ -65,33 +88,38 @@ export function PlayerPaddle() {
     y: height / 2 - 50,
     z: 0,
   });
-  const [velocity] = useState({
+  const [velocity, setVelocity] = useState({
     dx: PADDLE_SPEED,
     dy: PADDLE_SPEED,
     dz: 0,
   });
 
-  //   useUpdate(
-  //     (input) => {
-  //       if ((input.KEYBOARD_UP || input.GAMEPAD_BUTTON_12) && position.y >= 0) {
-  //         setPosition({
-  //           x: position.x,
-  //           y: position.y - velocity.dy,
-  //           z: 0,
-  //         });
-  //       } else if (
-  //         (input.KEYBOARD_DOWN || input.GAMEPAD_BUTTON_13) &&
-  //         position.y + body.height <= height
-  //       ) {
-  //         setPosition({
-  //           x: position.x,
-  //           y: position.y + velocity.dy,
-  //           z: 0,
-  //         });
-  //       }
-  //     },
-  //     [position, body, velocity]
-  //   );
+  useCollisionSystem({
+    id: "player",
+    components: {
+      position,
+      setPosition,
+      velocity,
+      setVelocity,
+      body,
+    },
+  });
+
+  useKey("w", () => {
+    setPosition({
+      x: position.x,
+      y: position.y - velocity.dy,
+      z: 0,
+    });
+  });
+
+  useKey("s", () => {
+    setPosition({
+      x: position.x,
+      y: position.y + velocity.dy,
+      z: 0,
+    });
+  });
 
   return (
     <div
@@ -110,21 +138,39 @@ export function PlayerPaddle() {
 
 export function OpponentPaddle() {
   const { height, width } = useGameState();
-  //   const opponent = useComponent("opponent");
 
-  const [body] = useState({
-    width: 15,
-    height: 100,
-  });
-  const [position] = useState({
+  const [position, setPosition] = useState({
     x: width - 30,
     y: height / 2 - 50,
     z: 0,
   });
-  const [velocity] = useState({
+  const [body] = useState({
+    width: 15,
+    height: 100,
+  });
+  const [velocity, setVelocity] = useState({
     dx: PADDLE_SPEED,
     dy: PADDLE_SPEED,
     dz: 0,
+  });
+
+  useOpponentAISystem({
+    position,
+    setPosition,
+    velocity,
+    setVelocity,
+    body,
+  });
+
+  useCollisionSystem({
+    id: "opponent",
+    components: {
+      position,
+      setPosition,
+      velocity,
+      setVelocity,
+      body,
+    },
   });
 
   return (
@@ -159,7 +205,35 @@ export function Ball() {
     height: 25,
   });
 
-  useBallMovementSystem(position, setPosition, velocity, setVelocity, body);
+  useBallMovementSystem({
+    position,
+    setPosition,
+    velocity,
+    setVelocity,
+    body,
+  });
+
+  useCollisionSystem({
+    id: "ball",
+    components: {
+      position,
+      setPosition,
+      velocity,
+      setVelocity,
+      body,
+    },
+  });
+
+  useScoreSystem({
+    id: "ball",
+    components: {
+      position,
+      setPosition,
+      velocity,
+      setVelocity,
+      body,
+    },
+  });
 
   return (
     <div

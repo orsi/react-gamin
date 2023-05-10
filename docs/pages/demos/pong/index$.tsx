@@ -8,7 +8,12 @@ import {
   Divider,
   Ball,
 } from "./entities";
-import { BallSystem } from "./systems";
+import {
+  BallMovementSystem,
+  CollisionSystem,
+  OpponentAISystem,
+  ScoreSystem,
+} from "./systems";
 
 export default function Pong() {
   const startGame = () => {
@@ -32,7 +37,15 @@ export default function Pong() {
         color: "white",
         height: "100%",
       }}
-      systems={[BallSystem]}
+      systems={[
+        BallMovementSystem,
+        OpponentAISystem,
+        CollisionSystem,
+        ({ children }) => (
+          <ScoreSystem onGameOver={showEndScene}>{children}</ScoreSystem>
+          // must fix ^
+        ),
+      ]}
     >
       {currentScene}
     </Game>
@@ -51,12 +64,17 @@ function PlayScene({ onGameOver }: { onGameOver?: (win: boolean) => void }) {
     <Ball />,
   ]);
 
+  const onClick = () => {
+    entities.splice(5, 1);
+    setEntities([...entities]);
+  };
+
   return (
-    <>
+    <div onClick={onClick}>
       {entities.map((el, index) => (
         <React.Fragment key={index}>{el}</React.Fragment>
       ))}
-    </>
+    </div>
   );
 }
 

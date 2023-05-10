@@ -4,6 +4,7 @@ let audioContext: AudioContext;
 export const useAudio = (src?: string) => {
   const audioBufferRef = useRef<AudioBuffer>();
   const audioBufferSourceNodeRef = useRef<AudioBufferSourceNode>();
+  const willPlayRef = useRef(false);
   const isPlaying = useRef(false);
 
   // check if audio context already exists
@@ -19,31 +20,37 @@ export const useAudio = (src?: string) => {
       .then((arrayBuffer) => {
         return audioContext.decodeAudioData(arrayBuffer);
       })
-      .then((audioBuffer) => (audioBufferRef.current = audioBuffer));
+      .then((audioBuffer) => {
+        audioBufferRef.current = audioBuffer;
+        if (willPlayRef.current === true) {
+          play();
+        }
+      });
   }
 
   //  setup window 'click' event to resume a suspended AudioContext
   const onClick = () => {
-    if (audioContext?.state === 'suspended') {
+    if (audioContext?.state === "suspended") {
       audioContext.resume();
     }
   };
 
   useEffect(() => {
-    window.addEventListener('click', onClick);
+    window.addEventListener("click", onClick);
     return () => {
-      window.removeEventListener('click', onClick);
+      window.removeEventListener("click", onClick);
     };
   }, []);
 
   const play = () => {
+    willPlayRef.current = true;
     if (audioBufferRef.current == null) {
       return;
     }
 
-    if (audioContext.state === 'suspended') {
+    if (audioContext.state === "suspended") {
       // we can't resume audio context in this function
-      console.warn('AudioContext is suspended.');
+      console.warn("AudioContext is suspended.");
       return;
     }
 
@@ -62,6 +69,7 @@ export const useAudio = (src?: string) => {
     };
     audioBufferSourceNodeRef.current.connect(audioContext.destination);
     audioBufferSourceNodeRef.current.start(audioContext.currentTime);
+    willPlayRef.current = false;
   };
 
   const stop = () => {

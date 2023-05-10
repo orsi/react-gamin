@@ -1,21 +1,53 @@
-import { createSystem, useSystem } from "./core";
+import {
+  createContext,
+  PropsWithChildren,
+  useRef,
+  useContext,
+  useEffect,
+} from "react";
+import { useGame } from "./core";
 
-export type Position = { x: number; y: number; z: number };
+export type PropsWithComponents<T, Props = unknown> = Props & {
+  components: T[];
+};
+export function experimental_createSystem<T, Props>(
+  systemFunction: ({
+    components,
+    ...props
+  }: PropsWithComponents<T, Props>) => (time: number) => void,
+  systemHook?: (component: T) => void
+) {
+  const Context = createContext<PropsWithComponents<T, Props>>(null);
 
-export const TestSystem = createSystem((time, components: Position[]) => {
-  // console.log("boink!", time, components);
-});
-export const useTestSystem = (position: Position) => {
-  const components = useSystem(TestSystem, position);
-  return () => {
-    const otherComponents = components.filter((c) => c !== position);
-    return otherComponents.some((c) => c.x > position.x);
+  const SystemProvider = ({ children, ...props }: PropsWithChildren<Props>) => {
+    const components = useRef<T[]>([]);
+    const { addSystem } = useGame();
+    addSystem(
+      systemFunction({ components: components.current, ...(props as Props) })
+    );
+    return (
+      <Context.Provider
+        value={{ components: components.current, ...(props as Props) }}
+      >
+        {children}
+      </Context.Provider>
+    );
   };
-};
 
-export const OtherSystem = createSystem((time, components: string[]) => {
-  // console.log("other", time, components);
-});
-export const useOtherSystem = (id: string) => {
-  const components = useSystem(OtherSystem, id);
-};
+  const useSystemHook = (component: T) => {
+    // register component with system context
+    const { components } = useContext(Context);
+    useEffect(() => {
+      components.push(component);
+      return () => {
+        const index = components.findIndex((i) => i === component);
+        components.splice(index, 1);
+      };
+    }, [component, components]);
+
+    // pass through system hook and return
+    return systemHook?.(component);
+  };
+
+  return [SystemProvider, useSystemHook] as const;
+}
