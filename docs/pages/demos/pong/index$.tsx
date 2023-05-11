@@ -35,7 +35,7 @@ export default function Pong() {
       style={{
         background: "black",
         color: "white",
-        height: "100%",
+        height: "500px",
       }}
       systems={[
         BallMovementSystem,
@@ -43,7 +43,6 @@ export default function Pong() {
         CollisionSystem,
         ({ children }) => (
           <ScoreSystem onGameOver={showEndScene}>{children}</ScoreSystem>
-          // must fix ^
         ),
       ]}
     >

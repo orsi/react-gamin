@@ -31,7 +31,7 @@ export interface GameProps extends PropsWithChildren {
   systems?: (({ children }: PropsWithChildren) => React.JSX.Element)[];
   style?: CSSProperties;
 }
-export function Game<T>({
+export function Game({
   children,
   development = false,
   fps = RAF_DELAY,

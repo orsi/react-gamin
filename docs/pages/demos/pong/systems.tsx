@@ -1,5 +1,4 @@
-// import boopAudioSfx from "./assets/GUI Sound Effects_031.mp3";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   useAudio,
   SetState,
@@ -63,7 +62,8 @@ export const [BallMovementSystem, useBallMovementSystem] =
     function useTest2SystemHook(component: BallMovementSystemComponent) {
       const [blep, setBlep] = useState(0);
       return blep;
-    }
+    },
+    "BallMovementSystem"
   );
 
 type OpponentAISystemComponents = {
@@ -118,6 +118,7 @@ export const [CollisionSystem, useCollisionSystem] = experimental_createSystem<
   CollisionSystemComponent,
   {}
 >(({ components }) => {
+  const paddleCollisionSfx = useAudio("/beep-03.wav");
   function collides(
     obj1: CollisionSystemComponent["components"],
     obj2: CollisionSystemComponent["components"]
@@ -154,7 +155,7 @@ export const [CollisionSystem, useCollisionSystem] = experimental_createSystem<
         y: ball.position.y,
         z: 0,
       });
-      // paddleCollisionSfx.play();
+      paddleCollisionSfx.play();
     } else if (collides(ball, opponent)) {
       ball.setVelocity({
         dx: ball.velocity.dx * -1,
@@ -166,7 +167,7 @@ export const [CollisionSystem, useCollisionSystem] = experimental_createSystem<
         y: ball.position.y,
         z: 0,
       });
-      // paddleCollisionSfx.play();
+      paddleCollisionSfx.play();
     }
   };
 });

@@ -244,7 +244,7 @@ interface DevelopmentProps {
   frameDeltasRef: React.MutableRefObject<number[]>;
 }
 export function Development({ frameDeltasRef }: DevelopmentProps) {
-  const [output, setOutput] = useState("");
+  const [output, setOutput] = useState("-");
 
   useEffect(() => {
     const interval = setInterval(() => {
