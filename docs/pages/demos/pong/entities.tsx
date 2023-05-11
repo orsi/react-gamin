@@ -78,7 +78,6 @@ export function OpponentScore({ x }: { x: number }) {
 
 export function PlayerPaddle() {
   const { height } = useGameState();
-  //   const player = useComponent("player");
   const [body] = useState({
     width: 15,
     height: 100,

@@ -2,7 +2,7 @@ import React from 'react'
 import { createTheme, defaultSideNavs } from 'vite-pages-theme-doc'
 
 export default createTheme({
-  logo: <div style={{ fontSize: '20px' }}>📘 Boink</div>,
+  logo: <div style={{ fontSize: '20px' }}>🎮 react-gamin</div>,
   topNavs: [
     { label: 'Home', path: '/' },
     {
