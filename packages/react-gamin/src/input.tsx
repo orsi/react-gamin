@@ -148,15 +148,6 @@ export const useKey = (target: KeyboardKey, input: () => void) => {
   const keyDownRef = useRef(false);
   const requestAnimationFrameRef = useRef(0);
 
-  const update = useCallback(() => {
-    if (
-      keyDownRef.current
-    ) {
-      game.addInput(input);
-    }
-    requestAnimationFrameRef.current = requestAnimationFrame(update);
-  }, [game, input]);
-
   const onKeydown = useCallback(
     ({ code, key }: KeyboardEvent) => {
       if (key === target) {
@@ -176,6 +167,13 @@ export const useKey = (target: KeyboardKey, input: () => void) => {
   );
 
   useEffect(() => {
+    const update = () => {
+      if (keyDownRef.current) {
+        game.addInput(input);
+      }
+      requestAnimationFrameRef.current = requestAnimationFrame(update);
+    };
+
     window.addEventListener("keydown", onKeydown);
     window.addEventListener("keyup", onKeyup);
     requestAnimationFrameRef.current = requestAnimationFrame(update);

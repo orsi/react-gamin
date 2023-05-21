@@ -14,29 +14,37 @@ export type SetState<T> = Dispatch<React.SetStateAction<T>>;
 
 const RAF_DELAY = 1000 / 30;
 
-export type GameState<T = {}> = {
+export type GameState<T = unknown> = {
   height: number;
   width: number;
 } & T;
-export type GameContext<T = {}> = {
+
+export type GameContext<T = unknown> = {
   addInput: Function;
   addSystem: Function;
   addScript: Function;
   state: GameState<T>;
 };
+
 export const GameContext = createContext<GameContext>(null);
+
 export interface GameProps extends PropsWithChildren {
   development?: boolean;
   fps?: number;
   systems?: (({ children }: PropsWithChildren) => React.JSX.Element)[];
   style?: CSSProperties;
 }
+
+/**
+ * The core <Game /> component used to cnetralize and sync all game
+ * processes, updates, inputs, etc.
+ */
 export function Game({
   children,
   development = false,
   fps = RAF_DELAY,
   style,
-  systems = [],
+  systems: _systems = [],
 }: GameProps) {
   // sanity check!
   const gameContext = useContext(GameContext);
@@ -45,42 +53,41 @@ export function Game({
   }
 
   const inputs = useRef([]);
-  const systemFunctions = useRef([]);
+  const systems = useRef([]);
   const scripts = useRef([]);
-  const [state, setState] = useState<GameState>({
+  const lastUpdateRef = useRef(0);
+  const frameDeltasRef = useRef([]);
+  const requestAnimationFrameRef = useRef(0);
+  const state = useRef<GameState>({
     height: null,
     width: null,
   });
-  const lastUpdateRef = useRef(0);
-  const frameDeltasRef = useRef<number[]>([]);
-  const requestAnimationFrameRef = useRef(0);
 
-  // game loop
+  /**
+   * Game update loop ran in requestAnimationFrame. This loop processes all
+   * input, systems, and component scripts in their respective order.
+   */
   useEffect(() => {
     const update = (time: number) => {
       const delta = time - lastUpdateRef.current;
 
+      // saves only the last 50 frame deltas to determine
+      // the average frames per second
       frameDeltasRef.current.push(delta);
       if (frameDeltasRef.current.length > 50) {
         frameDeltasRef.current.shift();
       }
 
       if (delta > fps) {
-        // update order
-        // input => systems => scripts
-
-        // execute and clear inputs
         for (const input of inputs.current) {
           input(time);
         }
-        inputs.current = [];
+        inputs.current = []; // don't want to re-execute inputs!
 
-        // run systems
-        for (const system of systemFunctions.current) {
-          system(time);
+        for (const system of systems.current) {
+          system(time, state);
         }
 
-        // component scripts
         for (const script of scripts.current) {
           script(time);
         }
@@ -95,7 +102,11 @@ export function Game({
     return () => {
       cancelAnimationFrame(requestAnimationFrameRef.current);
     };
-  }, [systems]);
+  }, [state]);
+
+  //
+  // Game API for various hooks to register themselves
+  //
 
   const addInput = (input: () => void) => {
     if (!inputs.current.some((i: () => void) => i === input)) {
@@ -105,13 +116,11 @@ export function Game({
 
   const addSystem = (system: Function) => {
     useEffect(() => {
-      systemFunctions.current = [...systemFunctions.current, system];
+      systems.current = [...systems.current, system];
       return () => {
-        const index = systemFunctions.current.findIndex(
-          (i: Function) => i === system
-        );
-        systemFunctions.current.splice(index, 1);
-        systemFunctions.current = [...systemFunctions.current];
+        const index = systems.current.findIndex((i: Function) => i === system);
+        systems.current.splice(index, 1);
+        systems.current = [...systems.current];
       };
     }, [system]);
   };
@@ -130,11 +139,11 @@ export function Game({
   useEffect(() => {
     const setDimensions = () => {
       const rect = containerRef.current?.getBoundingClientRect();
-      setState({
+      state.current = {
         ...state,
         height: rect?.height,
         width: rect?.width,
-      });
+      };
     };
     window.addEventListener("resize", setDimensions);
     setDimensions();
@@ -143,7 +152,14 @@ export function Game({
     };
   }, []);
 
-  const AllSystemContexts = systems.reduce(
+  /**
+   * System Context bridge to ensure all systems provided to <Game />
+   * wrap the entire hierarchy of children. Idea is loosely inspired by
+   * @pmndrs/its-fine.
+   *
+   * cf. https://github.com/pmndrs/its-fine/blob/main/src/index.tsx#L217
+   */
+  const SystemContextBridge = _systems.reduce(
     (Systems, System) =>
       ({ children }) =>
         (
@@ -160,32 +176,23 @@ export function Game({
         addInput,
         addSystem: addSystem,
         addScript,
-        state,
+        state: state.current,
       }}
     >
-      <AllSystemContexts>
-        <div
-          ref={containerRef}
-          style={{
-            position: "relative",
-            ...style,
-          }}
-        >
+      <div
+        ref={containerRef}
+        style={{
+          position: "relative",
+          ...style,
+        }}
+      >
+        <SystemContextBridge>
           {development && <Development frameDeltasRef={frameDeltasRef} />}
           {children}
-        </div>
-      </AllSystemContexts>
+        </SystemContextBridge>
+      </div>
     </GameContext.Provider>
   );
-}
-
-export function createSystem<T>(
-  system: (time: number, components: T[], state: GameContext["state"]) => void
-): any {
-  return {
-    system,
-    components: [],
-  };
 }
 
 export function useGame() {
@@ -196,17 +203,65 @@ export function useGame() {
   return context;
 }
 
-export function useGameState() {
-  const game = useGame();
-  return game.state;
-}
-
-export function useSystem<T>(system: (time?: number) => void) {
-  const { addSystem } = useGame();
-  addSystem(system);
-}
-
 export function useScript(script: (time?: number) => void) {
   const { addScript } = useGame();
   addScript(script);
+}
+
+export type PropsWithComponents<C, P = unknown> = P & {
+  components: C[];
+};
+
+export function createSystem<C, T = unknown, P = unknown>(
+  systemFunction: ({
+    components,
+    ...props
+  }: PropsWithComponents<C, P>) => (time: number) => void,
+  systemHook?: (component: C, context: PropsWithComponents<C, P>) => T,
+  displayName?: string
+) {
+  const Context = createContext<PropsWithComponents<C, P>>(null);
+  Context.displayName = displayName ?? "SystemContext";
+
+  const SystemProvider = ({
+    children,
+    ...props
+  }: PropsWithChildren<Omit<P, "components">>) => {
+    //                  ^ this doesn't seem right
+    const components = useRef<C[]>([]);
+    const { addSystem } = useGame();
+    addSystem(
+      systemFunction({ components: components.current, ...(props as P) })
+    );
+    return (
+      <Context.Provider
+        value={{ components: components.current, ...(props as P) }}
+      >
+        {children}
+      </Context.Provider>
+    );
+  };
+
+  const useSystemHook = (component: C) => {
+    const context = useContext(Context);
+    if (context == null) {
+      console.warn(
+        `${Context.displayName} is undefined. Did you pass it to <Game />?`
+      );
+    }
+
+    // register component with system context
+    useEffect(() => {
+      context?.components?.push(component);
+      return () => {
+        const index = context?.components?.findIndex((i) => i === component);
+        context?.components?.splice(index, 1);
+      };
+    }, [component, context]);
+
+    // pass through original system hook
+    return systemHook?.(component, context);
+  };
+
+  return [SystemProvider, useSystemHook] as const;
 }

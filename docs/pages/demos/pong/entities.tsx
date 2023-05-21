@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useGameState, useKey } from "react-gamin";
+import { useGame, useKey } from "react-gamin";
 import {
   PADDLE_SPEED,
   BALL_SPEED,
@@ -10,7 +10,7 @@ import {
 } from "./systems";
 
 export function Divider() {
-  const { width } = useGameState();
+  const { width } = useGame().state;
   return (
     <div
       style={{
@@ -77,7 +77,7 @@ export function OpponentScore({ x }: { x: number }) {
 }
 
 export function PlayerPaddle() {
-  const { height } = useGameState();
+  const { height } = useGame().state;
   const [body] = useState({
     width: 15,
     height: 100,
@@ -136,7 +136,7 @@ export function PlayerPaddle() {
 }
 
 export function OpponentPaddle() {
-  const { height, width } = useGameState();
+  const { height, width } = useGame().state;
 
   const [position, setPosition] = useState({
     x: width - 30,
@@ -188,7 +188,7 @@ export function OpponentPaddle() {
 }
 
 export function Ball() {
-  const { height, width } = useGameState();
+  const { height, width } = useGame().state;
   const [position, setPosition] = useState({
     x: width / 2 - 25,
     y: height / 2 - 25,

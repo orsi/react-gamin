@@ -1,10 +1,10 @@
 import { useState } from "react";
 import {
-  useAudio,
-  SetState,
-  experimental_createSystem,
-  useGameState,
+  createSystem,
   PropsWithComponents,
+  SetState,
+  useAudio,
+  useGame,
 } from "react-gamin";
 
 export const BALL_SPEED = 5;
@@ -25,46 +25,48 @@ type BallMovementSystemComponent = {
   setVelocity: SetState<Velocity>;
   body: Body;
 };
-export const [BallMovementSystem, useBallMovementSystem] =
-  experimental_createSystem<BallMovementSystemComponent, {}>(
-    function Test2SystemFunction({ components }) {
-      const { height, width } = useGameState();
-      const ballWallSfx = useAudio("/beep-03.wav");
+export const [BallMovementSystem, useBallMovementSystem] = createSystem<
+  BallMovementSystemComponent,
+  {}
+>(
+  function Test2SystemFunction({ components }) {
+    const { height, width } = useGame().state;
+    const ballWallSfx = useAudio("/beep-03.wav");
 
-      return (time: number) => {
-        for (const component of components) {
-          if (component.position.y + component.body.height >= height) {
-            component.setVelocity({
-              dx: component.velocity.dx,
-              dy: -BALL_SPEED,
-              dz: 0,
-            });
-            ballWallSfx.play();
-          } else if (component.position.y <= 0) {
-            component.setVelocity({
-              dx: component.velocity.dx,
-              dy: BALL_SPEED,
-              dz: 0,
-            });
-            ballWallSfx.play();
-          }
-
-          const newY = component.position.y + component.velocity.dy;
-          const newX = component.position.x + component.velocity.dx;
-          component.setPosition({
-            x: newX,
-            y: newY,
-            z: 0,
+    return (time: number) => {
+      for (const component of components) {
+        if (component.position.y + component.body.height >= height) {
+          component.setVelocity({
+            dx: component.velocity.dx,
+            dy: -BALL_SPEED,
+            dz: 0,
           });
+          ballWallSfx.play();
+        } else if (component.position.y <= 0) {
+          component.setVelocity({
+            dx: component.velocity.dx,
+            dy: BALL_SPEED,
+            dz: 0,
+          });
+          ballWallSfx.play();
         }
-      };
-    },
-    function useTest2SystemHook(component: BallMovementSystemComponent) {
-      const [blep, setBlep] = useState(0);
-      return blep;
-    },
-    "BallMovementSystem"
-  );
+
+        const newY = component.position.y + component.velocity.dy;
+        const newX = component.position.x + component.velocity.dx;
+        component.setPosition({
+          x: newX,
+          y: newY,
+          z: 0,
+        });
+      }
+    };
+  },
+  function useTest2SystemHook(component: BallMovementSystemComponent) {
+    const [blep, setBlep] = useState(0);
+    return blep;
+  },
+  "BallMovementSystem"
+);
 
 type OpponentAISystemComponents = {
   position: Position;
@@ -73,36 +75,36 @@ type OpponentAISystemComponents = {
   setVelocity: SetState<Velocity>;
   body: Body;
 };
-export const [OpponentAISystem, useOpponentAISystem] =
-  experimental_createSystem<OpponentAISystemComponents, {}>(function System({
-    components,
-  }) {
-    const { height } = useGameState();
-    return () => {
-      for (const component of components) {
-        // move opponent, and update if they hit walls
-        const opponentY = component.position.y + component.velocity.dy;
-        component.setPosition({
-          x: component.position.x,
-          y: opponentY,
-          z: 0,
+export const [OpponentAISystem, useOpponentAISystem] = createSystem<
+  OpponentAISystemComponents,
+  {}
+>(function System({ components }) {
+  const { height } = useGame().state;
+  return () => {
+    for (const component of components) {
+      // move opponent, and update if they hit walls
+      const opponentY = component.position.y + component.velocity.dy;
+      component.setPosition({
+        x: component.position.x,
+        y: opponentY,
+        z: 0,
+      });
+      if (component.position.y + component.body.height >= height) {
+        component.setVelocity({
+          dx: component.velocity.dx,
+          dy: -PADDLE_SPEED,
+          dz: 0,
         });
-        if (component.position.y + component.body.height >= height) {
-          component.setVelocity({
-            dx: component.velocity.dx,
-            dy: -PADDLE_SPEED,
-            dz: 0,
-          });
-        } else if (component.position.y <= 0) {
-          component.setVelocity({
-            dx: component.velocity.dx,
-            dy: PADDLE_SPEED,
-            dz: 0,
-          });
-        }
+      } else if (component.position.y <= 0) {
+        component.setVelocity({
+          dx: component.velocity.dx,
+          dy: PADDLE_SPEED,
+          dz: 0,
+        });
       }
-    };
-  });
+    }
+  };
+});
 
 interface CollisionSystemComponent {
   id: string;
@@ -114,7 +116,7 @@ interface CollisionSystemComponent {
     body: Body;
   };
 }
-export const [CollisionSystem, useCollisionSystem] = experimental_createSystem<
+export const [CollisionSystem, useCollisionSystem] = createSystem<
   CollisionSystemComponent,
   {}
 >(({ components }) => {
@@ -188,9 +190,9 @@ interface ScoreSystemComponent {
 interface ScoreSystemProps extends PropsWithComponents<ScoreSystemComponent> {
   onGameOver: (win: boolean) => void;
 }
-export const [ScoreSystem, useScoreSystem] = experimental_createSystem(
+export const [ScoreSystem, useScoreSystem] = createSystem(
   ({ onGameOver, components }: ScoreSystemProps) => {
-    const { height, width } = useGameState();
+    const { height, width } = useGame().state;
 
     return () => {
       const ball = components.find((i) => i.id === "ball")?.components;

@@ -2,7 +2,7 @@
 
 ### A *rockin'* React functional component library for makin' games  
 
-![react-gamin](./react-gamin.gif?raw=true "react-gamin")
+![react-gamin](./react-gamin-preview.gif?raw=true "react-gamin")
 
 Build your game using simple React functional components and state, enhanced with `react-gamin` custom components and hooks.
 
@@ -10,7 +10,7 @@ Build your game using simple React functional components and state, enhanced wit
 ```tsx
 export function PlayerPaddle() {
   // get global game state
-  const { height } = useGameState();
+  const { height } = useGame().state;
 
   const [body] = useState({
     width: 15,

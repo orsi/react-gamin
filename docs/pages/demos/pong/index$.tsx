@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Game, useGameState } from "react-gamin";
+import { Game, useGame } from "react-gamin";
 import {
   PlayerScore,
   OpponentScore,
@@ -52,7 +52,7 @@ export default function Pong() {
 }
 
 function PlayScene({ onGameOver }: { onGameOver?: (win: boolean) => void }) {
-  const { width } = useGameState();
+  const { width } = useGame().state;
 
   const [entities, setEntities] = useState([
     <PlayerScore x={24} />,
