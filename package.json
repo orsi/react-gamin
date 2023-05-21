@@ -28,6 +28,7 @@
   "homepage": "https://github.com/orsi/react-gamin#readme",
   "scripts": {
     "dev": "npm run dev -w docs",
+    "build": "npm run build -w docs",
     "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
