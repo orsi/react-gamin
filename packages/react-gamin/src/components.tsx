@@ -277,3 +277,61 @@ export function Development({ frameDeltasRef }: DevelopmentProps) {
     </div>
   );
 }
+
+interface SpriteCanvasProps<T extends string>
+  extends HTMLProps<HTMLCanvasElement> {
+  sprites: Record<T, string>;
+  tiles: { height: number; width: number; map: T[][] };
+}
+
+export function SpriteCanvas<T extends string>({
+  sprites,
+  tiles,
+  ...props
+}: SpriteCanvasProps<T>) {
+  const totalSprites = Object.keys(sprites).length;
+  const canvasHeight = tiles.map.length * tiles.height;
+  const canvasWidth = tiles.map[0].length * tiles.width;
+  const [isReady, setIsReady] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>();
+  const spritesRef = useRef<Record<string, HTMLImageElement>>({});
+
+  useEffect(() => {
+    for (const [sprite, src] of Object.entries<string>(sprites)) {
+      const img = new Image();
+      img.src = src;
+      img.addEventListener("load", () => {
+        spritesRef.current[sprite] = img;
+        const loadedSprites = Object.keys(spritesRef.current).length;
+        setIsReady(totalSprites === loadedSprites);
+      });
+    }
+  }, [sprites]);
+
+  useEffect(() => {
+    if (!isReady || canvasRef.current == null) {
+      return;
+    }
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    for (let y = 0; y < tiles.map.length; y++) {
+      const row = tiles.map[y];
+      for (let x = 0; x < row.length; x++) {
+        const col = row[x];
+        const image = spritesRef.current[col];
+        if (image) {
+          ctx.drawImage(image, x * tiles.width, y * tiles.height);
+        }
+      }
+    }
+  }, [isReady]);
+
+  return (
+    <canvas
+      height={canvasHeight}
+      ref={canvasRef}
+      width={canvasWidth}
+      {...props}
+    />
+  );
+}

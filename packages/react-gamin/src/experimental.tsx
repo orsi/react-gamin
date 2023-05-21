@@ -11,12 +11,12 @@ export type PropsWithComponents<C, P = unknown> = P & {
   components: C[];
 };
 
-export function experimental_createSystem<C, P>(
+export function experimental_createSystem<C, T = unknown, P = unknown>(
   systemFunction: ({
     components,
     ...props
   }: PropsWithComponents<C, P>) => (time: number) => void,
-  systemHook?: (component: C) => void,
+  systemHook?: (component: C, context: PropsWithComponents<C, P>) => T,
   displayName?: string
 ) {
   const Context = createContext<PropsWithComponents<C, P>>(null);
@@ -58,8 +58,8 @@ export function experimental_createSystem<C, P>(
       };
     }, [component, context]);
 
-    // pass through system hook and return
-    return systemHook?.(component);
+    // pass through original system hook
+    return systemHook?.(component, context);
   };
 
   return [SystemProvider, useSystemHook] as const;
