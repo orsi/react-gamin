@@ -1,0 +1,4 @@
+monster-animation.png
+monster-sprite.png
+author: dogchicken
+url: https://opengameart.org/content/cute-monster-sprite-sheet
