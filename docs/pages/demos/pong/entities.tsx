@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useGame, useKey } from "react-gamin";
 import {
-  PADDLE_SPEED,
-  BALL_SPEED,
+  PADDLE_PIXELS_PER_SECOND,
+  BALL_PIXELS_PER_SECOND,
   useBallMovementSystem,
   useOpponentAISystem,
   useCollisionSystem,
@@ -31,10 +31,8 @@ export function PlayerScore({ x }: { x: number }) {
 
   useScoreSystem({
     id: "playerScore",
-    components: {
-      score,
-      setScore,
-    },
+    score,
+    setScore,
   });
 
   return (
@@ -56,10 +54,8 @@ export function OpponentScore({ x }: { x: number }) {
 
   useScoreSystem({
     id: "opponentScore",
-    components: {
-      score,
-      setScore,
-    },
+    score,
+    setScore,
   });
 
   return (
@@ -77,7 +73,8 @@ export function OpponentScore({ x }: { x: number }) {
 }
 
 export function PlayerPaddle() {
-  const { height } = useGame().state;
+  const { state } = useGame();
+  const { height } = state;
   const [body] = useState({
     width: 15,
     height: 100,
@@ -88,34 +85,41 @@ export function PlayerPaddle() {
     z: 0,
   });
   const [velocity, setVelocity] = useState({
-    dx: PADDLE_SPEED,
-    dy: PADDLE_SPEED,
+    dx: PADDLE_PIXELS_PER_SECOND,
+    dy: PADDLE_PIXELS_PER_SECOND,
     dz: 0,
   });
 
   useCollisionSystem({
     id: "player",
-    components: {
-      position,
-      setPosition,
-      velocity,
-      setVelocity,
-      body,
-    },
+    position,
+    setPosition,
+    velocity,
+    setVelocity,
+    body,
   });
 
-  useKey("w", () => {
+  useKey("w", (time) => {
+    if (position.y <= 0) {
+      return;
+    }
+
     setPosition({
       x: position.x,
-      y: position.y - velocity.dy,
+      y: position.y - velocity.dy / (1000 / time),
       z: 0,
     });
   });
 
-  useKey("s", () => {
+  useKey("s", (time) => {
+    if (position.y >= height - body.height) {
+      return;
+    }
+
+    console.log(time);
     setPosition({
       x: position.x,
-      y: position.y + velocity.dy,
+      y: position.y + velocity.dy / (1000 / time),
       z: 0,
     });
   });
@@ -148,8 +152,8 @@ export function OpponentPaddle() {
     height: 100,
   });
   const [velocity, setVelocity] = useState({
-    dx: PADDLE_SPEED,
-    dy: PADDLE_SPEED,
+    dx: PADDLE_PIXELS_PER_SECOND,
+    dy: PADDLE_PIXELS_PER_SECOND,
     dz: 0,
   });
 
@@ -163,13 +167,11 @@ export function OpponentPaddle() {
 
   useCollisionSystem({
     id: "opponent",
-    components: {
-      position,
-      setPosition,
-      velocity,
-      setVelocity,
-      body,
-    },
+    position,
+    setPosition,
+    velocity,
+    setVelocity,
+    body,
   });
 
   return (
@@ -195,8 +197,8 @@ export function Ball() {
     z: 0,
   });
   const [velocity, setVelocity] = useState({
-    dx: BALL_SPEED,
-    dy: BALL_SPEED,
+    dx: BALL_PIXELS_PER_SECOND,
+    dy: BALL_PIXELS_PER_SECOND,
     dz: 0,
   });
   const [body] = useState({
@@ -214,24 +216,20 @@ export function Ball() {
 
   useCollisionSystem({
     id: "ball",
-    components: {
-      position,
-      setPosition,
-      velocity,
-      setVelocity,
-      body,
-    },
+    position,
+    setPosition,
+    velocity,
+    setVelocity,
+    body,
   });
 
   useScoreSystem({
     id: "ball",
-    components: {
-      position,
-      setPosition,
-      velocity,
-      setVelocity,
-      body,
-    },
+    position,
+    setPosition,
+    velocity,
+    setVelocity,
+    body,
   });
 
   return (

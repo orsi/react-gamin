@@ -143,28 +143,22 @@ export type KeyboardKey = keyof typeof KEYBOARD_KEY_CODES;
 export type KeyboardCode =
   (typeof KEYBOARD_KEY_CODES)[keyof typeof KEYBOARD_KEY_CODES];
 
-export const useKey = (target: KeyboardKey, input: () => void) => {
+export const useKey = (target: KeyboardKey, input: (time: number) => void) => {
   const game = useGame();
   const keyDownRef = useRef(false);
   const requestAnimationFrameRef = useRef(0);
 
-  const onKeydown = useCallback(
-    ({ code, key }: KeyboardEvent) => {
-      if (key === target) {
-        keyDownRef.current = true;
-      }
-    },
-    [target]
-  );
+  const onKeydown = ({ code, key }: KeyboardEvent) => {
+    if (key === target) {
+      keyDownRef.current = true;
+    }
+  };
 
-  const onKeyup = useCallback(
-    ({ code, key }: KeyboardEvent) => {
-      if (key === target) {
-        keyDownRef.current = false;
-      }
-    },
-    [target]
-  );
+  const onKeyup = ({ code, key }: KeyboardEvent) => {
+    if (key === target) {
+      keyDownRef.current = false;
+    }
+  };
 
   useEffect(() => {
     const update = () => {
@@ -174,6 +168,10 @@ export const useKey = (target: KeyboardKey, input: () => void) => {
       requestAnimationFrameRef.current = requestAnimationFrame(update);
     };
 
+    // TODO
+    // Something is wrong here, as in the Pong game the player paddle
+    // should be running at the same speed as the opponent paddle
+
     window.addEventListener("keydown", onKeydown);
     window.addEventListener("keyup", onKeyup);
     requestAnimationFrameRef.current = requestAnimationFrame(update);
@@ -182,7 +180,7 @@ export const useKey = (target: KeyboardKey, input: () => void) => {
       window.removeEventListener("keyup", onKeyup);
       cancelAnimationFrame(requestAnimationFrameRef.current);
     };
-  }, [input]);
+  }, [input, target]);
 };
 
 // cf. https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button#value
@@ -211,8 +209,7 @@ export type MiniMouseEvent = {
 
 export const useMouse = (
   target: MouseButton | "move",
-  listener: (ev: MiniMouseEvent) => void,
-  continuous = false
+  listener: (ev: MiniMouseEvent) => void
 ) => {
   const mouseEventRef = useRef<MiniMouseEvent>({
     button: null,
@@ -220,14 +217,10 @@ export const useMouse = (
     y: null,
   });
   const requestAnimationFrameRef = useRef(0);
-  const lastUpdateRef = useRef<number>(0);
 
   const update = () => {
-    const now = Date.now();
-    const delta = now - lastUpdateRef.current;
-    if (mouseEventRef.current?.button === target && delta > FPS_60_MS) {
+    if (mouseEventRef.current?.button === target) {
       listener(mouseEventRef.current);
-      lastUpdateRef.current = now;
     }
     requestAnimationFrameRef.current = requestAnimationFrame(update);
   };
@@ -274,14 +267,11 @@ export const useMouse = (
   }, [listener]);
 
   useEffect(() => {
-    if (continuous === true) {
-      lastUpdateRef.current = Date.now();
-      requestAnimationFrameRef.current = requestAnimationFrame(update);
-    }
+    requestAnimationFrameRef.current = requestAnimationFrame(update);
     return () => {
       cancelAnimationFrame(requestAnimationFrameRef.current);
     };
-  }, [continuous, listener]);
+  }, [listener]);
 };
 
 // 8bitDo controller buttons

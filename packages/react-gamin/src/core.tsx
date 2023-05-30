@@ -85,6 +85,11 @@ export function Game<T = unknown>({
       }
 
       // fixed-time loop
+
+      // TODO
+      // Something is wrong here, as the speed of the ball and paddles
+      // in Pong are depependent on the throttled RAF time
+
       while (accumulatorRef.current > frameRate) {
         for (const input of inputs.current) {
           input(frameRate);
@@ -113,10 +118,8 @@ export function Game<T = unknown>({
   }, []);
 
   // Game APIs for various hooks to register themselves
-  const addInput = (input: () => void) => {
-    if (!inputs.current.some((i: () => void) => i === input)) {
-      inputs.current.push(input);
-    }
+  const addInput = (input: Function) => {
+    inputs.current = [...inputs.current, input];
   };
 
   const addScript = (script: () => void) => {
