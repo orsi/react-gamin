@@ -1,16 +1,17 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Game,
   SetState,
   Sprite,
   SpriteCanvas,
   createSystem,
+  createSystemHook,
   useKey,
 } from "react-gamin";
 
 export default function RPG() {
   return (
-    <Game development fps={1000 / 60} systems={[MoveSystem]}>
+    <Game development frameRate={1000 / 60} systems={[MoveSystem2]}>
       <Outdoors />
     </Game>
   );
@@ -47,7 +48,7 @@ function Outdoors() {
 function Man() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [body, setBody] = useState({ width: 16, height: 16 });
-  const move = useMoveSystem({
+  const move = useMoveSystem2({
     body,
     position,
     setPosition,
@@ -77,59 +78,55 @@ interface MoveSystemComponent {
   position: { x: number; y: number };
   setPosition: SetState<{ x: number; y: number }>;
 }
-const [MoveSystem, useMoveSystem] = createSystem(
-  () => {
-    return () => {};
-  },
-  (component: MoveSystemComponent) => {
-    const lastUpdateRef = useRef(Date.now());
 
-    return (direction: "up" | "down" | "left" | "right") => {
-      const now = Date.now();
-      if (now - lastUpdateRef.current < 250) {
-        return;
-      }
-      lastUpdateRef.current = now;
+const MoveSystem2 = createSystem<MoveSystemComponent>();
+const useMoveSystem2 = createSystemHook(MoveSystem2, (component, system) => {
+  const lastUpdateRef = useRef(Date.now());
 
-      switch (direction) {
-        case "up": {
-          component.setPosition((position) => {
-            return {
-              ...position,
-              y: position.y - 16,
-            };
-          });
-          break;
-        }
-        case "down": {
-          component.setPosition((position) => {
-            return {
-              ...position,
-              y: position.y + 16,
-            };
-          });
-          break;
-        }
-        case "left": {
-          component.setPosition((position) => {
-            return {
-              ...position,
-              x: position.x - 16,
-            };
-          });
-          break;
-        }
-        case "right": {
-          component.setPosition((position) => {
-            return {
-              ...position,
-              x: position.x + 16,
-            };
-          });
-          break;
-        }
+  return (direction: "up" | "down" | "left" | "right") => {
+    const now = Date.now();
+    if (now - lastUpdateRef.current < 250) {
+      return;
+    }
+    lastUpdateRef.current = now;
+
+    switch (direction) {
+      case "up": {
+        component.setPosition((position) => {
+          return {
+            ...position,
+            y: position.y - 16,
+          };
+        });
+        break;
       }
-    };
-  },
-  "MoveSystem"
-);
+      case "down": {
+        component.setPosition((position) => {
+          return {
+            ...position,
+            y: position.y + 16,
+          };
+        });
+        break;
+      }
+      case "left": {
+        component.setPosition((position) => {
+          return {
+            ...position,
+            x: position.x - 16,
+          };
+        });
+        break;
+      }
+      case "right": {
+        component.setPosition((position) => {
+          return {
+            ...position,
+            x: position.x + 16,
+          };
+        });
+        break;
+      }
+    }
+  };
+});

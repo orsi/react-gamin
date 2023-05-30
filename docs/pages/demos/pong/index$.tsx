@@ -31,19 +31,20 @@ export default function Pong() {
   return (
     <Game
       development
-      fps={1000 / 60}
+      frameRate={1000 / 60}
       style={{
         background: "black",
         color: "white",
         height: "500px",
       }}
+      initialState={{
+        onGameOver: showEndScene,
+      }}
       systems={[
         BallMovementSystem,
         OpponentAISystem,
         CollisionSystem,
-        ({ children }) => (
-          <ScoreSystem onGameOver={showEndScene}>{children}</ScoreSystem>
-        ),
+        ScoreSystem,
       ]}
     >
       {currentScene}
