@@ -40,14 +40,14 @@ export const BallMovementSystem = createSystem<BallMovementSystemComponent>(
             dy: -BALL_PIXELS_PER_SECOND,
             dz: 0,
           });
-          ballWallSfx.play();
+          // ballWallSfx.play();
         } else if (component.position.y <= 0) {
           component.setVelocity({
             dx: component.velocity.dx,
             dy: BALL_PIXELS_PER_SECOND,
             dz: 0,
           });
-          ballWallSfx.play();
+          // ballWallSfx.play();
         }
 
         const newY =
@@ -156,7 +156,7 @@ export const CollisionSystem = createSystem<CollisionSystemComponent>(
           y: ball.position.y,
           z: 0,
         });
-        paddleCollisionSfx.play();
+        // paddleCollisionSfx.play();
       } else if (collides(ball, opponent)) {
         ball.setVelocity({
           dx: ball.velocity.dx * -1,
@@ -168,7 +168,7 @@ export const CollisionSystem = createSystem<CollisionSystemComponent>(
           y: ball.position.y,
           z: 0,
         });
-        paddleCollisionSfx.play();
+        // paddleCollisionSfx.play();
       }
     };
   }

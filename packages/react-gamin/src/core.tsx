@@ -8,21 +8,21 @@ import React, {
   useRef,
 } from "react";
 import { Development } from "./components";
-
-export type SetState<T> = Dispatch<React.SetStateAction<T>>;
+import { System, SystemContext, useGame } from "./hooks";
 
 const DEFAULT_FPS = 30;
 const DEFAULT_FRAME_RATE = 1000 / DEFAULT_FPS;
 
+export type SetState<T> = Dispatch<React.SetStateAction<T>>;
+
 export type GameState<T = unknown> = {
   height: number;
   width: number;
-  components: unknown[];
 } & T;
 
 export type GameContext<T = unknown> = {
-  addInput: Function;
-  addScript: Function;
+  inputs: React.MutableRefObject<InputComponent[]>;
+  scripts: React.MutableRefObject<ScriptComponent[]>;
   state: GameState<T>;
 };
 
@@ -54,9 +54,10 @@ export function Game<T = unknown>({
     throw Error("Why is there a game in a game?!?");
   }
 
-  const inputs = useRef([]);
-  const systems = useRef([]);
-  const scripts = useRef([]);
+  const inputs = useInputManager();
+  const systems = useSystemManager<T>();
+  const scripts = useScriptManager();
+
   const lastUpdateRef = useRef(0);
   const accumulatorRef = useRef(0);
   const frameDeltasRef = useRef([]);
@@ -84,17 +85,26 @@ export function Game<T = unknown>({
         frameDeltasRef.current.shift();
       }
 
+      // special input polling for gamepads
+      const gamepads = navigator?.getGamepads();
+
       // fixed-time loop
-
-      // TODO
-      // Something is wrong here, as the speed of the ball and paddles
-      // in Pong are depependent on the throttled RAF time
-
+      // TODO:
+      //  Something is wrong here, as the speed of the ball and paddles
+      //  in Pong are still dependent on the throttled RAF time
       while (accumulatorRef.current > frameRate) {
         for (const input of inputs.current) {
-          input(frameRate);
+          if (input.type !== "gamepad" && input.canProcess) {
+            input.fn(frameRate);
+          } else if (input.type === "gamepad") {
+            // special case for gamepad as we need to poll
+            // every loop for what buttons are pushed
+            const gamepad = gamepads?.[input.data.pad];
+            if (gamepad && gamepad.buttons[input.data.button].pressed) {
+              input.fn(frameRate);
+            }
+          }
         }
-        inputs.current = []; // don't want to re-execute inputs!
 
         for (const system of systems.current) {
           system(frameRate, state.current);
@@ -116,21 +126,6 @@ export function Game<T = unknown>({
       cancelAnimationFrame(requestAnimationFrameRef.current);
     };
   }, []);
-
-  // Game APIs for various hooks to register themselves
-  const addInput = (input: Function) => {
-    inputs.current = [...inputs.current, input];
-  };
-
-  const addScript = (script: () => void) => {
-    useEffect(() => {
-      scripts.current = [...scripts.current, script];
-      return () => {
-        const index = scripts.current.findIndex((i: any) => i === script);
-        scripts.current.splice(index, 1);
-      };
-    }, [script]);
-  };
 
   const containerRef = useRef<HTMLDivElement>();
   useEffect(() => {
@@ -173,9 +168,7 @@ export function Game<T = unknown>({
         useEffect(() => {
           systems.current = [...systems.current, fn];
           return () => {
-            const index = systems.current.findIndex(
-              (f: ReturnType<SystemFunction>) => f === fn
-            );
+            const index = systems.current.findIndex((i) => i === fn);
             systems.current.splice(index, 1);
             systems.current = [...systems.current];
           };
@@ -195,8 +188,8 @@ export function Game<T = unknown>({
   return (
     <GameContext.Provider
       value={{
-        addInput,
-        addScript,
+        scripts,
+        inputs,
         state: state.current,
       }}
     >
@@ -216,74 +209,94 @@ export function Game<T = unknown>({
   );
 }
 
-export function useGame() {
-  const context = useContext(GameContext);
-  if (!context) {
-    throw Error("No game context!");
-  }
-  return context;
+export interface InputComponent {
+  type: "key" | "mouse" | "gamepad";
+  fn: (...args: any[]) => void;
+  canProcess: boolean;
+  data?: any;
 }
 
-export function useScript(script: (time?: number) => void) {
-  const { addScript } = useGame();
-  addScript(script);
-}
+function useInputManager() {
+  const inputs = useRef<InputComponent[]>([]);
 
-export type SystemFunction<C = unknown, T = unknown> = (
-  system: SystemContext<C>
-) => (time: number, game: GameContext<T>["state"]) => void;
-
-export type SystemContext<C = unknown> = {
-  components: C[];
-};
-
-export type System<C = unknown> = {
-  Context: React.Context<SystemContext<C>>;
-  Function: SystemFunction<C>;
-};
-
-export function createSystem<C = unknown, T = unknown>(
-  fn?: SystemFunction<C, T>,
-  displayName?: string
-) {
-  const Context = createContext<SystemContext<C>>(null);
-  Context.displayName = displayName ?? "SystemContext";
-  return { Context, Function: fn } as System<C>;
-}
-
-export function createSystemHook<C, T = unknown>(
-  system: System<C>,
-  systemHook?: (component: C, systemContext: SystemContext<C>) => T
-) {
-  return (component: C) => {
-    const { state } = useGame();
-    const systemContext = useContext<SystemContext<C>>(system.Context);
-    if (systemContext == null) {
-      console.warn(
-        `${system.Context.displayName} is undefined. Did you pass it to <Game />?`
-      );
+  const onKeydown = ({ key }: KeyboardEvent) => {
+    for (const input of inputs.current) {
+      if (key === input.data.key) {
+        input.canProcess = true;
+      }
     }
-
-    // register component with system and game contexts
-    useEffect(() => {
-      state.components = [...state.components, component];
-      systemContext.components = [...systemContext.components, component];
-      return () => {
-        const gameComponentIndex = state.components.findIndex(
-          (i) => i === component
-        );
-        state.components.splice(gameComponentIndex, 1);
-        state.components = [...state.components];
-
-        const systemComponentIndex = systemContext.components.findIndex(
-          (i) => i === component
-        );
-        systemContext.components.splice(systemComponentIndex, 1);
-        systemContext.components = [...systemContext.components];
-      };
-    }, [component, state, systemContext]);
-
-    // pass through original system hook
-    return systemHook ? systemHook(component, systemContext) : undefined;
   };
+
+  const onKeyup = ({ key }: KeyboardEvent) => {
+    for (const input of inputs.current) {
+      if (key === input.data.key) {
+        input.canProcess = false;
+      }
+    }
+  };
+
+  // TODO:
+  // Should mousedown and mouseup events be handled fundamentally different
+  // from mousemove events? Do we even need to handle mousemove events? Probably...
+  const onMousedown = ({ button, clientX, clientY }: MouseEvent) => {
+    // mouseEventRef.current = {
+    //   button: MouseButtonMap[button as MouseButtonMapKey],
+    //   x: clientX,
+    //   y: clientY,
+    // };
+    // if (mouseEventRef.current?.button === target) {
+    //   listener(mouseEventRef.current);
+    // }
+  };
+
+  const onMouseup = ({ button, clientX, clientY }: MouseEvent) => {
+    // mouseEventRef.current = {
+    //   button: null,
+    //   x: clientX,
+    //   y: clientY,
+    // };
+  };
+
+  const onMousemove = ({ button, clientX, clientY }: MouseEvent) => {
+    // mouseEventRef.current = {
+    //   ...mouseEventRef.current,
+    //   x: clientX,
+    //   y: clientY,
+    // };
+    // if (target === "move") {
+    //   listener(mouseEventRef.current);
+    // }
+  };
+
+  // setup global input handlers
+  useEffect(() => {
+    window.addEventListener("keydown", onKeydown);
+    window.addEventListener("keyup", onKeyup);
+    window.addEventListener("mousedown", onMousedown);
+    window.addEventListener("mouseup", onMouseup);
+    window.addEventListener("mousemove", onMousemove);
+    return () => {
+      window.removeEventListener("keydown", onKeydown);
+      window.removeEventListener("keyup", onKeyup);
+      window.removeEventListener("mousedown", onMousedown);
+      window.removeEventListener("mouseup", onMouseup);
+      window.removeEventListener("mousemove", onMousemove);
+    };
+  }, []);
+
+  return inputs;
+}
+
+export type SystemComponent<T> = (time: number, state: GameState<T>) => void;
+
+function useSystemManager<T>() {
+  const systems = useRef<SystemComponent<T>[]>([]);
+  return systems;
+}
+
+export type ScriptComponent = (time: number) => void;
+
+function useScriptManager() {
+  const scripts = useRef<ScriptComponent[]>([]);
+  return scripts;
 }

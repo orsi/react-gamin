@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useGame, useKey } from "react-gamin";
+import { useGame, useGamepad, useKey, useScript } from "react-gamin";
 import {
   PADDLE_PIXELS_PER_SECOND,
   BALL_PIXELS_PER_SECOND,
@@ -116,7 +116,30 @@ export function PlayerPaddle() {
       return;
     }
 
-    console.log(time);
+    setPosition({
+      x: position.x,
+      y: position.y + velocity.dy / (1000 / time),
+      z: 0,
+    });
+  });
+
+  useGamepad("Up", (time) => {
+    if (position.y <= 0) {
+      return;
+    }
+
+    setPosition({
+      x: position.x,
+      y: position.y - velocity.dy / (1000 / time),
+      z: 0,
+    });
+  });
+
+  useGamepad("Down", (time) => {
+    if (position.y >= height - body.height) {
+      return;
+    }
+
     setPosition({
       x: position.x,
       y: position.y + velocity.dy / (1000 / time),
