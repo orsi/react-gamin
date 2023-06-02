@@ -31,7 +31,6 @@ export default function Pong() {
   return (
     <Game
       development
-      frameRate={1000 / 60}
       style={{
         background: "black",
         color: "white",

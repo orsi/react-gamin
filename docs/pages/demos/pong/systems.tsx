@@ -50,14 +50,20 @@ export const BallMovementSystem = createSystem<BallMovementSystemComponent>(
           // ballWallSfx.play();
         }
 
-        const newY =
-          component.position.y + component.velocity.dy / (1000 / time);
-        const newX =
-          component.position.x + component.velocity.dx / (1000 / time);
-        component.setPosition({
-          x: newX,
-          y: newY,
-          z: 0,
+        // TODO:FRAME_RATE_INDEPENDENCE
+        // This somewhat resolves the issue where we have to update twice
+        // to catch up to the frameRate, as the state setter function will
+        // always have the newest state. But this will eventually run into
+        // issues, as we have to use other state variables inside this
+        // function (velocity) that aren't exactly up-to-date.
+        component.setPosition((position) => {
+          const newY = position.y + component.velocity.dy / (1000 / time);
+          const newX = position.x + component.velocity.dx / (1000 / time);
+          return {
+            x: newX,
+            y: newY,
+            z: 0,
+          };
         });
       }
     };
@@ -232,7 +238,7 @@ export const ScoreSystem = createSystem<
       } else {
         // player won!
         resetBall();
-        onGameOver(true);
+        // onGameOver(true);
       }
     } else if (ball.position.x <= 0) {
       // opponent scores if hitting left wall
@@ -243,7 +249,7 @@ export const ScoreSystem = createSystem<
       } else {
         // opponent won :()
         resetBall();
-        onGameOver(false);
+        // onGameOver(false);
       }
     }
   };

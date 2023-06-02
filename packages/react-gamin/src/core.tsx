@@ -11,7 +11,7 @@ import { Development } from "./components";
 import { System, SystemContext, useGame } from "./hooks";
 
 const DEFAULT_FPS = 30;
-const DEFAULT_FRAME_RATE = 1000 / DEFAULT_FPS;
+const DEFAULT_FRAME_RATE_MS = 1000 / DEFAULT_FPS;
 
 export type SetState<T> = Dispatch<React.SetStateAction<T>>;
 
@@ -43,25 +43,30 @@ export interface GameProps<T = unknown> extends PropsWithChildren {
 export function Game<T = unknown>({
   children,
   development = false,
-  frameRate = DEFAULT_FRAME_RATE,
+  frameRate = DEFAULT_FRAME_RATE_MS,
   initialState,
   style,
   systems: _systems = [],
 }: GameProps<T>) {
-  // sanity check!
+  // sanity checks!
   const gameContext = useContext(GameContext);
   if (gameContext != null) {
     throw Error("Why is there a game in a game?!?");
+  }
+
+  // we can only guarantee support for 30hz framerates due to
+  // React state unable to update twice during update frames
+  if (frameRate < 1000 / 30) {
+    console.warn(
+      "Frame rates greater than 30hz will not work on lower frame rate monitors."
+    );
   }
 
   const inputs = useInputManager();
   const systems = useSystemManager<T>();
   const scripts = useScriptManager();
 
-  const lastUpdateRef = useRef(0);
-  const accumulatorRef = useRef(0);
   const frameDeltasRef = useRef([]);
-  const requestAnimationFrameRef = useRef(0);
   const state = useRef<GameState<T>>({
     height: null,
     width: null,
@@ -74,9 +79,12 @@ export function Game<T = unknown>({
    * input, systems, and component scripts in their respective order.
    */
   useEffect(() => {
+    let raf = 0;
+    let lastUpdate = 0;
+    let accumulator = 0;
     const update = (time: number) => {
-      const delta = time - lastUpdateRef.current;
-      accumulatorRef.current += delta;
+      const delta = time - lastUpdate;
+      accumulator += delta;
 
       // saves only the last 50 frame deltas to determine
       // the average frames per second
@@ -88,11 +96,23 @@ export function Game<T = unknown>({
       // special input polling for gamepads
       const gamepads = navigator?.getGamepads();
 
-      // fixed-time loop
-      // TODO:
-      //  Something is wrong here, as the speed of the ball and paddles
-      //  in Pong are still dependent on the throttled RAF time
-      while (accumulatorRef.current > frameRate) {
+      while (accumulator > frameRate) {
+        // TODO:FRAME_RATE_INDEPENDENCE
+        // A problem occurs when the game frameRate is set higher than
+        // the refresh rate of this requestAnimationFrame. E.g. when I
+        // unplug my laptop power cord, requestAnimationFrame runs at 30hz
+        // instead of 60hz.
+        //
+        // The issue here is that we sometimes have to call this update
+        // twice in one rAF call (60hz framerate in a 30hz raf), but that
+        // leads to these fns calculating the same React state twice,
+        // since React hasn't been given the chance to update state from
+        // the first loop.
+        //
+        // We can mitigate this some by using a state setter function in
+        // these registered functions, however, that doesn't really work
+        // when we have multiple state functions needing to be updated.
+
         for (const input of inputs.current) {
           if (input.type !== "gamepad" && input.canProcess) {
             input.fn(frameRate);
@@ -114,16 +134,16 @@ export function Game<T = unknown>({
           script(frameRate);
         }
 
-        accumulatorRef.current -= frameRate;
+        accumulator -= frameRate;
       }
 
-      lastUpdateRef.current = time;
-      requestAnimationFrameRef.current = requestAnimationFrame(update);
+      lastUpdate = time;
+      raf = requestAnimationFrame(update);
     };
 
-    requestAnimationFrameRef.current = requestAnimationFrame(update);
+    raf = requestAnimationFrame(update);
     return () => {
-      cancelAnimationFrame(requestAnimationFrameRef.current);
+      cancelAnimationFrame(raf);
     };
   }, []);
 

@@ -11,7 +11,7 @@ import {
 
 export default function RPG() {
   return (
-    <Game development frameRate={1000 / 60} systems={[MoveSystem2]}>
+    <Game development systems={[MoveSystem2]}>
       <Outdoors />
     </Game>
   );
