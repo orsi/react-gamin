@@ -176,27 +176,26 @@ export function Game<T = unknown>({
   const SystemContextBridge = _systems.reduce(
     (Systems, System) =>
       ({ children }) => {
-        const contextRef = useRef<SystemContext<unknown>>({
+        const systemContextRef = useRef<SystemContext<unknown>>({
           components: [],
         });
 
         const fn =
           System.Function != null
-            ? System.Function(contextRef.current)
+            ? System.Function(systemContextRef.current)
             : () => {};
 
         useEffect(() => {
-          systems.current = [...systems.current, fn];
+          systems.current.push(fn);
           return () => {
             const index = systems.current.findIndex((i) => i === fn);
             systems.current.splice(index, 1);
-            systems.current = [...systems.current];
           };
         }, [fn]);
 
         return (
           <Systems>
-            <System.Context.Provider value={contextRef.current}>
+            <System.Context.Provider value={systemContextRef.current}>
               {children}
             </System.Context.Provider>
           </Systems>

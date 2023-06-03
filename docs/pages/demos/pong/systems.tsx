@@ -29,11 +29,11 @@ export type BallMovementSystemComponent = {
 };
 
 export const BallMovementSystem = createSystem<BallMovementSystemComponent>(
-  (system) => {
+  ({ components }) => {
     const ballWallSfx = useAudio("/beep-03.wav");
 
     return (time, { height }) => {
-      for (const component of system.components) {
+      for (const component of components) {
         if (component.position.y + component.body.height >= height) {
           component.setVelocity({
             dx: component.velocity.dx,
@@ -82,9 +82,9 @@ export type OpponentAISystemComponents = {
 };
 
 export const OpponentAISystem = createSystem<OpponentAISystemComponents>(
-  (system) => {
+  ({ components }) => {
     return (time, { height }) => {
-      for (const component of system.components) {
+      for (const component of components) {
         // move opponent, and update if they hit walls
         const opponentY =
           component.position.y + component.velocity.dy / (1000 / time);
@@ -124,7 +124,7 @@ export interface CollisionSystemComponent {
 }
 
 export const CollisionSystem = createSystem<CollisionSystemComponent>(
-  (system) => {
+  ({ components }) => {
     const paddleCollisionSfx = useAudio("/beep-03.wav");
     function collides(
       obj1: CollisionSystemComponent,
@@ -143,9 +143,9 @@ export const CollisionSystem = createSystem<CollisionSystemComponent>(
     }
 
     return () => {
-      const ball = system.components.find((i) => i.id === "ball");
-      const player = system.components.find((i) => i.id === "player");
-      const opponent = system.components.find((i) => i.id === "opponent");
+      const ball = components.find((i) => i.id === "ball");
+      const player = components.find((i) => i.id === "player");
+      const opponent = components.find((i) => i.id === "opponent");
 
       if (ball == null || player == null || opponent == null) {
         return;
@@ -196,17 +196,11 @@ export interface ScoreSystemComponent {
 export const ScoreSystem = createSystem<
   ScoreSystemComponent,
   { onGameOver: Function }
->((system) => {
-  // TODO:
-  // ^ can't destructure this here as { components }, as it unwraps
-  // the ref too early and the below update function will not have
-  // the updated references when it is called by the game loop
+>(({ components }) => {
   return (time, { height, width, onGameOver }) => {
-    const ball = system.components.find((i) => i.id === "ball");
-    const playerScore = system.components.find((i) => i.id === "playerScore");
-    const opponentScore = system.components.find(
-      (i) => i.id === "opponentScore"
-    );
+    const ball = components.find((i) => i.id === "ball");
+    const playerScore = components.find((i) => i.id === "playerScore");
+    const opponentScore = components.find((i) => i.id === "opponentScore");
 
     if (ball == null || playerScore == null || opponentScore == null) {
       return;

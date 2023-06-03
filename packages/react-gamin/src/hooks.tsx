@@ -47,13 +47,12 @@ export const useKey = (key: KeyboardKey, fn: (time: number) => void) => {
   }, [key, fn]);
 
   useEffect(() => {
-    game.inputs.current = [...game.inputs.current, inputComponentRef.current];
+    game.inputs.current.push(inputComponentRef.current);
     return () => {
       const index = game.inputs.current.findIndex(
         (i) => i === inputComponentRef.current
       );
       game.inputs.current.splice(index, 1);
-      game.inputs.current = [...game.inputs.current];
     };
   }, []);
 };
@@ -92,13 +91,12 @@ export const useGamepad = (
   }, [button, fn]);
 
   useEffect(() => {
-    game.inputs.current = [...game.inputs.current, inputComponentRef.current];
+    game.inputs.current.push(inputComponentRef.current);
     return () => {
       const index = game.inputs.current.findIndex(
         (i) => i === inputComponentRef.current
       );
       game.inputs.current.splice(index, 1);
-      game.inputs.current = [...game.inputs.current];
     };
   }, [button, fn]);
 };
@@ -128,13 +126,12 @@ export const useMouse = (
   });
 
   useEffect(() => {
-    game.inputs.current = [...game.inputs.current, inputComponentRef.current];
+    game.inputs.current.push(inputComponentRef.current);
     return () => {
       const index = game.inputs.current.findIndex(
         (i) => i === inputComponentRef.current
       );
       game.inputs.current.splice(index, 1);
-      game.inputs.current = [...game.inputs.current];
     };
   }, []);
 };
@@ -146,11 +143,10 @@ export const useMouse = (
 export function useScript(fn: ScriptComponent) {
   const game = useGame();
   useEffect(() => {
-    game.scripts.current = [...game.scripts.current, fn];
+    game.scripts.current.push(fn);
     return () => {
       const index = game.scripts.current.findIndex((i) => i === fn);
       game.scripts.current.splice(index, 1);
-      game.scripts.current = [...game.scripts.current];
     };
   }, [fn]);
 }
@@ -186,9 +182,9 @@ export function createSystem<C = unknown, T = unknown>(
 /**
  * Creates a hook for the provided system that components
  * can use to register their state to.
- * @param system 
- * @param systemHook 
- * @returns 
+ * @param system
+ * @param systemHook
+ * @returns
  */
 export function createSystemHook<C, T = unknown>(
   system: System<C>,
@@ -205,13 +201,12 @@ export function createSystemHook<C, T = unknown>(
 
     // register component with system and game contexts
     useEffect(() => {
-      systemContext.components = [...systemContext.components, component];
+      systemContext.components.push(component);
       return () => {
         const systemComponentIndex = systemContext.components.findIndex(
           (i) => i === component
         );
         systemContext.components.splice(systemComponentIndex, 1);
-        systemContext.components = [...systemContext.components];
       };
     }, [component, state, systemContext]);
 
