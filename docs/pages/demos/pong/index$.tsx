@@ -34,7 +34,8 @@ export default function Pong() {
       style={{
         background: "black",
         color: "white",
-        height: "500px",
+        height: "480px",
+        width: "640px",
       }}
       initialState={{
         onGameOver: showEndScene,

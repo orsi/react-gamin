@@ -3,7 +3,6 @@ import {
   Game,
   SetState,
   Sprite,
-  SpriteCanvas,
   createSystem,
   createSystemHook,
   useKey,
@@ -11,93 +10,88 @@ import {
 
 export default function Sokoban() {
   return (
-    <Game development systems={[MoveSystem2]}>
-      <Outdoors />
+    <Game
+      development
+      style={{
+        backgroundColor: "black",
+        height: "480px",
+        width: "640px",
+      }}
+      systems={[MoveSystem2]}
+    >
+      <SokobanGame />
     </Game>
   );
 }
 
+// Create initial map elements
 const ASCII_MAP =
-  "xxxxxxxxxx\n" +
-  "x      h x\n" +
-  "x        x\n" +
-  "x  o     x\n" +
-  "x        x\n" +
-  "xxxxxxxxxx";
+  "xxxxxxx\n" +
+  "x   h x\n" +
+  "x     x\n" +
+  "x  o  x\n" +
+  "x     x\n" +
+  "xxxxxxx";
+const GRID_WIDTH = ASCII_MAP.indexOf("\n");
+const GRID_HEIGHT = ASCII_MAP.replaceAll("\n", "").length / GRID_WIDTH;
+let mapElements = [];
+let i = 0;
+let row = 0;
+while (i < ASCII_MAP.length) {
+  const char = ASCII_MAP[i];
+  if (mapElements[row] == null) {
+    mapElements[row] = [];
+  }
 
-function Outdoors() {
-  return (
-    <TileMap
-      map={ASCII_MAP}
-      tiles={{
-        x: (
-          <Sprite
-            src={"/kenney_sokoban-pack/PNG/Default size/Blocks/block_05.png"}
-            style={{ maxWidth: "100%" }}
-          />
-        ),
-        h: (
-          <Sprite
-            src={"/kenney_sokoban-pack/PNG/Default size/Player/player_01.png"}
-            style={{ maxWidth: "100%" }}
-          />
-        ),
-        o: (
-          <Sprite
-            src={"/kenney_sokoban-pack/PNG/Default size/Crates/crate_02.png"}
-            style={{ maxWidth: "100%" }}
-          />
-        ),
-        " ": <span />,
-      }}
-      cell={{
-        height: 32,
-        width: 32,
-      }}
-    />
-  );
-}
-
-function TileMap({ cell, map, tiles }: any) {
-  const gridWidth = map.indexOf("\n");
-  const gridHeight = map.replaceAll("\n", "").length / gridWidth;
-  let elements = [];
-  let i = 0;
-  let row = 0;
-  while (i < map.length) {
-    const char = map[i];
-    if (elements[row] == null) {
-      elements[row] = [];
-    }
-
-    if (char === "\n") {
+  switch (char) {
+    case "\n": {
       row++;
       i++;
       continue;
     }
-
-    const tile = tiles[char];
-    if (tile) {
-      elements[row].push(tile);
-    } else {
-      console.warn(
-        `%cNo tile specificed for ${char} in map\n${map}`,
-        "font-family: monospace"
+    case "x": {
+      mapElements[row].push(
+        <Sprite
+          src={"/kenney_sokoban-pack/PNG/Default size/Blocks/block_05.png"}
+          style={{ maxWidth: "100%" }}
+        />
       );
-      elements[row].push(<span />);
+      i++;
+      continue;
     }
-    i++;
+    case "o": {
+      mapElements[row].push(
+        <Sprite
+          src={"/kenney_sokoban-pack/PNG/Default size/Crates/crate_02.png"}
+          style={{ maxWidth: "100%" }}
+        />
+      );
+      i++;
+      continue;
+    }
+    case "h": {
+      mapElements[row].push(<Player />);
+      i++;
+      continue;
+    }
+    default: {
+      mapElements[row].push(<span />);
+      i++;
+      continue;
+    }
   }
+}
 
+function SokobanGame() {
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: `repeat(${gridWidth}, ${cell.width}px)`,
-        gridTemplateRows: `repeat(${gridHeight}, ${cell.height}px)`,
+        gridTemplateColumns: `repeat(${GRID_WIDTH}, ${CELL_SIZE}px)`,
+        gridTemplateRows: `repeat(${GRID_HEIGHT}, ${CELL_SIZE}px)`,
       }}
     >
-      {elements?.map((row, i) => {
+      {mapElements?.map((row, i) => {
         return (
           <React.Fragment key={i}>
             {row?.map((col, i) => {
@@ -110,9 +104,9 @@ function TileMap({ cell, map, tiles }: any) {
   );
 }
 
-function Man() {
+function Player() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [body, setBody] = useState({ width: 16, height: 16 });
+  const [body, setBody] = useState({ width: CELL_SIZE, height: CELL_SIZE });
   const move = useMoveSystem2({
     body,
     position,
@@ -135,8 +129,18 @@ function Man() {
     move("right");
   });
 
-  return <Sprite position={{ ...position, z: 0 }} src="/man.png" />;
+  return (
+    <Sprite
+      position={{ ...position, z: 0 }}
+      src="/kenney_sokoban-pack/PNG/Default size/Player/player_01.png"
+      style={{
+        maxWidth: "100%",
+      }}
+    />
+  );
 }
+
+const CELL_SIZE = 64;
 
 interface MoveSystemComponent {
   body: { width: number; height: number };
@@ -160,7 +164,7 @@ const useMoveSystem2 = createSystemHook(MoveSystem2, (component, system) => {
         component.setPosition((position) => {
           return {
             ...position,
-            y: position.y - 16,
+            y: position.y - CELL_SIZE,
           };
         });
         break;
@@ -169,7 +173,7 @@ const useMoveSystem2 = createSystemHook(MoveSystem2, (component, system) => {
         component.setPosition((position) => {
           return {
             ...position,
-            y: position.y + 16,
+            y: position.y + CELL_SIZE,
           };
         });
         break;
@@ -178,7 +182,7 @@ const useMoveSystem2 = createSystemHook(MoveSystem2, (component, system) => {
         component.setPosition((position) => {
           return {
             ...position,
-            x: position.x - 16,
+            x: position.x - CELL_SIZE,
           };
         });
         break;
@@ -187,7 +191,7 @@ const useMoveSystem2 = createSystemHook(MoveSystem2, (component, system) => {
         component.setPosition((position) => {
           return {
             ...position,
-            x: position.x + 16,
+            x: position.x + CELL_SIZE,
           };
         });
         break;
