@@ -35,9 +35,7 @@ export function Sprite({
   style,
   ...props
 }: SpriteProps) {
-  const spriteStyle: React.CSSProperties = {
-    position: "absolute",
-  };
+  const spriteStyle: React.CSSProperties = {};
 
   const transforms = [];
   if (perspective != null) {

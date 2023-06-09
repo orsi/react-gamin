@@ -8,7 +8,7 @@ import React, {
   useRef,
 } from "react";
 import { Development } from "./components";
-import { System, SystemContext, useGame } from "./hooks";
+import { System, SystemContext } from "./hooks";
 
 const DEFAULT_FPS = 30;
 const DEFAULT_FRAME_RATE_MS = 1000 / DEFAULT_FPS;
