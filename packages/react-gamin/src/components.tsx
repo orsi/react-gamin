@@ -1,5 +1,7 @@
 import { HTMLProps, useEffect, useRef, useState } from "react";
 
+const DEFAULT_FRAME_INTERVAL = 1000 / 10; // 10fps
+
 export interface SpriteProps extends HTMLProps<HTMLImageElement> {
   src: string;
   // optional
@@ -76,7 +78,6 @@ export function Sprite({
   );
 }
 
-const DEFAULT_FRAME_INTERVAL = 1000 / 10; // 10fps
 export interface AnimatedSpriteProps extends SpriteProps {
   sprites: SpriteProps[];
   // optional
@@ -124,123 +125,10 @@ export function AnimatedSprite({
   return <Sprite {...sprites[currentFrameIndex]} {...props} />;
 }
 
-export interface SpriteSheet {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-export interface SpriteSheetProps<T extends Record<string, SpriteSheet>>
-  extends SpriteProps,
-    HTMLProps<HTMLImageElement> {
-  src: string;
-  sprite: keyof T;
-  sprites: T;
-}
-export function SpriteSheet<T extends Record<string, SpriteSheet>>({
-  sprite,
-  sprites,
-  style,
-  ...props
-}: SpriteSheetProps<T>) {
-  const spriteSheetStyle: React.CSSProperties = {
-    height: `${sprites[sprite].height}px`,
-    objectFit: "none",
-    objectPosition: `${-sprites[sprite].x}px ${-sprites[sprite].y}px`,
-    width: `${sprites[sprite].width}px`,
-  };
-
-  return (
-    <Sprite
-      style={{
-        ...spriteSheetStyle,
-        ...style,
-      }}
-      {...props}
-    />
-  );
-}
-
-export interface Animation {
-  sprite: string;
-}
-export interface AnimatedSpriteSheetProps<
-  T extends Record<string, Animation[]>,
-  U extends Record<string, SpriteSheet>
-> extends Omit<SpriteSheetProps<U>, "sprite"> {
-  animation: keyof T;
-  animations: T;
-  // optional
-  frameLengthMs?: number;
-  loop?: boolean;
-  play?: boolean;
-}
-export function AnimatedSpriteSheet<
-  T extends Record<string, Animation[]>,
-  U extends Record<string, SpriteSheet>
->({
-  animation,
-  animations,
-  sprites,
-  // optional
-  frameLengthMs = DEFAULT_FRAME_INTERVAL,
-  loop = true,
-  play = true,
-  ...props
-}: AnimatedSpriteSheetProps<T, U>) {
-  const [currentAnimationFrameIndex, setCurrentAnimationFrameIndex] =
-    useState(0);
-  const lastUpdateRef = useRef(0);
-  const requestAnimationFrameRef = useRef(0);
-
-  useEffect(() => {
-    const update = (time: number) => {
-      const delta = time - lastUpdateRef.current;
-
-      if (delta > frameLengthMs) {
-        const isPlaying =
-          play &&
-          (loop ||
-            currentAnimationFrameIndex + 1 < animations[animation].length);
-        if (!isPlaying) {
-          return;
-        }
-
-        const nextFrame =
-          (currentAnimationFrameIndex + 1) % animations[animation].length;
-
-        setCurrentAnimationFrameIndex(nextFrame);
-        lastUpdateRef.current = time;
-      }
-
-      requestAnimationFrameRef.current = requestAnimationFrame(update);
-    };
-
-    requestAnimationFrameRef.current = requestAnimationFrame(update);
-    return () => {
-      cancelAnimationFrame(requestAnimationFrameRef.current);
-    };
-  }, [
-    animations,
-    animation,
-    currentAnimationFrameIndex,
-    frameLengthMs,
-    loop,
-    play,
-  ]);
-
-  return (
-    <SpriteSheet
-      sprite={animations?.[animation]?.[currentAnimationFrameIndex]?.sprite}
-      sprites={sprites}
-      {...props}
-    />
-  );
-}
-
 interface DevelopmentProps {
   frameDeltasRef: React.MutableRefObject<number[]>;
 }
+
 export function Development({ frameDeltasRef }: DevelopmentProps) {
   const [output, setOutput] = useState("-");
 
@@ -273,63 +161,5 @@ export function Development({ frameDeltasRef }: DevelopmentProps) {
         <small>{output}</small>
       </div>
     </div>
-  );
-}
-
-interface SpriteCanvasProps<T extends string>
-  extends HTMLProps<HTMLCanvasElement> {
-  sprites: Record<T, string>;
-  tiles: { height: number; width: number; map: T[][] };
-}
-
-export function SpriteCanvas<T extends string>({
-  sprites,
-  tiles,
-  ...props
-}: SpriteCanvasProps<T>) {
-  const totalSprites = Object.keys(sprites).length;
-  const canvasHeight = tiles.map.length * tiles.height;
-  const canvasWidth = tiles.map[0].length * tiles.width;
-  const [isReady, setIsReady] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>();
-  const spritesRef = useRef<Record<string, HTMLImageElement>>({});
-
-  useEffect(() => {
-    for (const [sprite, src] of Object.entries<string>(sprites)) {
-      const img = new Image();
-      img.src = src;
-      img.addEventListener("load", () => {
-        spritesRef.current[sprite] = img;
-        const loadedSprites = Object.keys(spritesRef.current).length;
-        setIsReady(totalSprites === loadedSprites);
-      });
-    }
-  }, [sprites]);
-
-  useEffect(() => {
-    if (!isReady || canvasRef.current == null) {
-      return;
-    }
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    for (let y = 0; y < tiles.map.length; y++) {
-      const row = tiles.map[y];
-      for (let x = 0; x < row.length; x++) {
-        const col = row[x];
-        const image = spritesRef.current[col];
-        if (image) {
-          ctx.drawImage(image, x * tiles.width, y * tiles.height);
-        }
-      }
-    }
-  }, [isReady]);
-
-  return (
-    <canvas
-      height={canvasHeight}
-      ref={canvasRef}
-      width={canvasWidth}
-      {...props}
-    />
   );
 }
