@@ -3,8 +3,7 @@
   "version": "0.0.0",
   "description": "A rockin' React functional component library for games!",
   "workspaces": [
-    "docs",
-    "example",
+    "app",
     "packages/*"
   ],
   "directories": {
@@ -27,7 +26,7 @@
   },
   "homepage": "https://github.com/orsi/react-gamin#readme",
   "scripts": {
-    "dev": "npm run dev -w docs",
+    "dev": "npm run dev -w app",
     "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
